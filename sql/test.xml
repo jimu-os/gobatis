@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<sql namespace="user">
+    <select id="SelectStudent">
+        select * from student where ${name}
+        <if condition="">
+
+        </if>
+        <for v=""  arr="${sex}==0">
+            ${a}
+        </for>
+        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    </select>
+
+    <insert id="addUser">
+
+    </insert>
+
+    <update id="updateUser">
+
+    </update>
+
+    <delete id="deleteUser">
+
+    </delete>
+</sql>
