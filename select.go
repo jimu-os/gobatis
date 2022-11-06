@@ -14,3 +14,8 @@ func (s *Select) GetSql() *etree.Element {
 func (s *Select) GetFragment() []*etree.Element {
 	return s.Fragment
 }
+
+func (s *Select) Generate(ctx map[string]any) string {
+
+	return ""
+}

@@ -8,8 +8,16 @@ import (
 	"strings"
 )
 
+const (
+	SELECT = "select"
+	INSERT = "insert"
+	UPDATE = "update"
+	DELETE = "delete"
+)
+
 type Build struct {
-	SqlSource  string
+	SqlSource string
+	// 保存所有的 xml 解析
 	NameSpaces map[string]*Sql
 }
 
@@ -23,6 +31,7 @@ func (build *Build) LoadXml(source string) {
 	}
 	root := filepath.Join(getwd, build.SqlSource)
 
+	// 解析 xml
 	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".xml") {
 			document := etree.NewDocument()
