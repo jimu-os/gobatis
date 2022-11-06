@@ -1,20 +1,31 @@
 package sqlgo
 
-import "github.com/beevik/etree"
+func SelectElement(template string, ctx map[string]any) (string, error) {
 
-type Statement interface {
-	GetSql() *etree.Element
+	return "", nil
 }
 
-type Fragment interface {
-	GetFragment() []*etree.Element
+func UpdateElement(template string, ctx map[string]any) (string, error) {
+
+	return "", nil
 }
 
-type For struct {
-	Element *etree.Element
+func InsertElement(template string, ctx map[string]any) (string, error) {
+
+	return "", nil
 }
 
-type If struct {
-	Element  *etree.Element
-	Fragment []*etree.Element
+func DeleteElement(template string, ctx map[string]any) (string, error) {
+
+	return "", nil
+}
+
+func ForElement(template string, ctx map[string]any) (string, error) {
+
+	return "", nil
+}
+
+func IfElement(template string, ctx map[string]any) (string, error) {
+
+	return "", nil
 }

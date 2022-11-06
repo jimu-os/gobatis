@@ -1,6 +1,7 @@
 package sqlgo
 
 import (
+	"errors"
 	"github.com/beevik/etree"
 	"io/fs"
 	"os"
@@ -8,12 +9,11 @@ import (
 	"strings"
 )
 
-const (
-	SELECT = "select"
-	INSERT = "insert"
-	UPDATE = "update"
-	DELETE = "delete"
-)
+func NewBuild() *Build {
+	return &Build{
+		NameSpaces: map[string]*Sql{},
+	}
+}
 
 type Build struct {
 	SqlSource string
@@ -49,7 +49,74 @@ func (build *Build) LoadXml(source string) {
 	})
 }
 
-func Analysis(element *etree.Element) (string, error) {
+func (build *Build) Sql(id string, ctx map[string]any) (string, error) {
+	ids := strings.Split(id, ".")
+	if len(ids) != 2 {
+		return "", errors.New("id error")
+	}
+	if sql, b := build.NameSpaces[ids[0]]; b {
+		if element, f := sql.Statement[ids[1]]; f {
+			analysis, err := Analysis(element, ctx)
+			if err != nil {
+				return "", err
+			}
+			join := strings.Join(analysis[:len(analysis)-1], " ")
+			return join, nil
+		}
+	}
+	return "", nil
+}
 
+// Analysis 解析xml标签，sql root (select，insert，update，delete)，不解析开始标签之前，结束标签之后的文本内容
+func Analysis(root *etree.Element, ctx map[string]any) ([]string, error) {
+	sql := []string{}
+	// 解析根标签 开始之后的文本
+	sqlStar := root.Text()
+	// 处理字符串前后空格
+	sqlStar = strings.TrimSpace(sqlStar)
+	//更具标签类型，对应解析字符串
+	sqlStar, err := Element(root, sqlStar, ctx)
+	if err != nil {
+		return nil, err
+	}
+	sql = append(sql, sqlStar)
+	// 解析子标签内容
+	child := root.ChildElements()
+	for _, element := range child {
+		analysis, err := Analysis(element, ctx)
+		if err != nil {
+			return nil, err
+		}
+		sql = append(sql, analysis...)
+	}
+	endSql := root.Tail()
+	endSql = strings.TrimSpace(endSql)
+	if endSql != "" {
+		endSql, err = Element(root, endSql, ctx)
+		if err != nil {
+			return nil, err
+		}
+		sql = append(sql, endSql)
+	}
+	return sql, nil
+}
+
+func Element(element *etree.Element, template string, ctx map[string]any) (string, error) {
+	// 检擦 节点标签类型
+	tag := element.Tag
+	switch tag {
+	case "select":
+		return SelectElement(template, ctx)
+	case "update":
+		return UpdateElement(template, ctx)
+	case "insert":
+		return InsertElement(template, ctx)
+	case "delete":
+		return DeleteElement(template, ctx)
+	case "for":
+		return ForElement(template, ctx)
+	case "if":
+		return IfElement(template, ctx)
+	}
 	return "", nil
 }

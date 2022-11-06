@@ -1,25 +1,55 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <sql namespace="user">
     <select id="SelectStudent">
-        select * from student where ${name}
+        1
         <if condition="">
-
+           2
+            <if condition="">
+               3
+            </if>
+            4
         </if>
+        5
         <for v=""  arr="${sex}==0">
-            ${a}
+           6
         </for>
-        aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        7
+        <if condition="">
+            8
+        </if>
+        <if condition="">
+            9
+            <if condition="">
+                10
+            </if>
+
+
+            <if condition="">
+                11
+                <if condition="">
+                    12
+                    <if condition="">
+                        13
+                    </if>
+                </if>
+            </if>
+        </if>
     </select>
-
-    <insert id="addUser">
-
-    </insert>
-
-    <update id="updateUser">
-
-    </update>
-
-    <delete id="deleteUser">
-
-    </delete>
+    test text01
+    <select id="SelectStudent2">
+        1
+        <if condition="">
+            2
+            <if condition="">
+                3
+            </if>
+            4
+        </if>
+        5
+        <for v=""  arr="${sex}==0">
+            6
+        </for>
+        7
+    </select>
+    test text02
 </sql>

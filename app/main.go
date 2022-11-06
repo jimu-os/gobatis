@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"reflect"
+	"gitee.com/aurora-engine/sqlgo"
 )
 
 type Student struct {
@@ -17,11 +17,11 @@ type StuMapper interface {
 type Mapper func(any)
 
 func main() {
-	//build := &sqlgo.Build{}
-	//build.LoadXml("/sql")
-	s := new(StuMapper)
-	of := reflect.ValueOf(*s)
-	fmt.Println(of.String())
-	//method := of.NumMethod()
-	fmt.Println(of.Kind())
+	build := sqlgo.NewBuild()
+	build.LoadXml("/sql")
+	sql, err := build.Sql("user.SelectStudent", nil)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Println(sql)
 }
