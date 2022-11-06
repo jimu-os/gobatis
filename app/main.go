@@ -17,9 +17,9 @@ type StuMapper interface {
 type Mapper func(any)
 
 func main() {
-	build := sqlgo.NewBuild()
-	build.LoadXml("/sql")
-	sql, err := build.Sql("user.SelectStudent", nil)
+	sgo := sqlgo.NewSqlGo()
+	sgo.LoadXml("/sql")
+	sql, err := sgo.Sql("user.SelectStudent", nil)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

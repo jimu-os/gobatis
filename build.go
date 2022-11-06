@@ -9,19 +9,19 @@ import (
 	"strings"
 )
 
-func NewBuild() *Build {
-	return &Build{
+func NewSqlGo() *Sgo {
+	return &Sgo{
 		NameSpaces: map[string]*Sql{},
 	}
 }
 
-type Build struct {
+type Sgo struct {
 	SqlSource string
 	// 保存所有的 xml 解析
 	NameSpaces map[string]*Sql
 }
 
-func (build *Build) LoadXml(source string) {
+func (build *Sgo) LoadXml(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}
@@ -49,7 +49,7 @@ func (build *Build) LoadXml(source string) {
 	})
 }
 
-func (build *Build) Sql(id string, ctx map[string]any) (string, error) {
+func (build *Sgo) Sql(id string, ctx map[string]any) (string, error) {
 	ids := strings.Split(id, ".")
 	if len(ids) != 2 {
 		return "", errors.New("id error")
@@ -68,20 +68,20 @@ func (build *Build) Sql(id string, ctx map[string]any) (string, error) {
 }
 
 // Analysis 解析xml标签，sql root (select，insert，update，delete)，不解析开始标签之前，结束标签之后的文本内容
-func Analysis(root *etree.Element, ctx map[string]any) ([]string, error) {
+func Analysis(element *etree.Element, ctx map[string]any) ([]string, error) {
 	sql := []string{}
 	// 解析根标签 开始之后的文本
-	sqlStar := root.Text()
+	sqlStar := element.Text()
 	// 处理字符串前后空格
 	sqlStar = strings.TrimSpace(sqlStar)
 	//更具标签类型，对应解析字符串
-	sqlStar, err := Element(root, sqlStar, ctx)
+	sqlStar, err := Element(element, sqlStar, ctx)
 	if err != nil {
 		return nil, err
 	}
 	sql = append(sql, sqlStar)
 	// 解析子标签内容
-	child := root.ChildElements()
+	child := element.ChildElements()
 	for _, element := range child {
 		analysis, err := Analysis(element, ctx)
 		if err != nil {
@@ -89,10 +89,10 @@ func Analysis(root *etree.Element, ctx map[string]any) ([]string, error) {
 		}
 		sql = append(sql, analysis...)
 	}
-	endSql := root.Tail()
+	endSql := element.Tail()
 	endSql = strings.TrimSpace(endSql)
 	if endSql != "" {
-		endSql, err = Element(root, endSql, ctx)
+		endSql, err = Element(element.Parent(), endSql, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -105,18 +105,12 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 	// 检擦 节点标签类型
 	tag := element.Tag
 	switch tag {
-	case "select":
-		return SelectElement(template, ctx)
-	case "update":
-		return UpdateElement(template, ctx)
-	case "insert":
-		return InsertElement(template, ctx)
-	case "delete":
-		return DeleteElement(template, ctx)
 	case "for":
-		return ForElement(template, ctx)
+		return ForElement(element, template, ctx)
 	case "if":
-		return IfElement(template, ctx)
+		return IfElement(element, template, ctx)
+	case "select", "update", "delete", "insert":
+		return StatementElement(element, template, ctx)
 	}
-	return "", nil
+	return "", errors.New("error")
 }
