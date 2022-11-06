@@ -2,19 +2,12 @@ package sqlgo
 
 import "github.com/beevik/etree"
 
-type Insert struct {
-	Element      *etree.Element
-	ChildElement []*etree.Element
+type Statement interface {
+	GetSql() *etree.Element
 }
 
-type Update struct {
-	Element      *etree.Element
-	ChildElement []*etree.Element
-}
-
-type Delete struct {
-	Element      *etree.Element
-	ChildElement []*etree.Element
+type Fragment interface {
+	GetFragment() []*etree.Element
 }
 
 type For struct {
@@ -22,5 +15,6 @@ type For struct {
 }
 
 type If struct {
-	Element *etree.Element
+	Element  *etree.Element
+	Fragment []*etree.Element
 }
