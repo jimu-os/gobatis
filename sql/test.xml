@@ -1,64 +1,45 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE sql [
+        <!ELEMENT sql (#PCDATA|insert|select|update|delete|for|if)*>
+
+        <!ELEMENT insert (#PCDATA|for|if)*>
+        <!ELEMENT select (#PCDATA|for|if)*>
+        <!ELEMENT update (#PCDATA|for|if)*>
+        <!ELEMENT delete (#PCDATA|for|if)*>
+        <!ELEMENT for (#PCDATA|for|if)*>
+        <!ELEMENT if (#PCDATA|for|if)*>
+
+        <!ATTLIST sql namespace CDATA #REQUIRED>
+        <!ATTLIST select id CDATA #REQUIRED>
+        <!ATTLIST insert id CDATA #REQUIRED>
+        <!ATTLIST update id CDATA #REQUIRED>
+        <!ATTLIST delete id CDATA #REQUIRED>
+        <!ATTLIST for slice CDATA #REQUIRED>
+        <!ATTLIST for item CDATA #REQUIRED>
+        <!ATTLIST for open CDATA "(">
+        <!ATTLIST for close CDATA ")">
+        <!ATTLIST for key CDATA "">
+        <!ATTLIST for separator CDATA ",">
+        <!ATTLIST if value CDATA #REQUIRED>
+]>
+
 <sql namespace="user">
     <select id="SelectStudent">
-        1
-        <if condition="">
-           2
-            <if condition="">
-               3
-            </if>
-            4
-        </if>
-        5
-        <for v=""  arr="${sex}==0">
-           6
-        </for>
-        7
-        <if condition="">
-            8
-        </if>
-        <if condition="">
-            9
-            <if condition="">
-                10
-            </if>
 
-
-            <if condition="">
-                11
-                <if condition="">
-                    12
-                    <if condition="">
-                        13
-                    </if>
-                </if>
-            </if>
-        </if>
     </select>
-    test text01
     <select id="SelectStudent2">
-        1
-        <if condition="">
-            2
-            <if condition="">
-                3
-            </if>
-            4
-        </if>
-        5
-        <for v=""  arr="${sex}==0">
-            6
-        </for>
-        7
+
     </select>
-    test text02
 
     <select id="select03">
-        select * from student where
-        <for slice="{arr}" item="obj" index="i" open="(" close=")" separator="," key="id">
+        select * from student where sss={name} and
+        <for slice="{arr}" item="obj" open="(" close=")" separator="," key="id">
             {obj}
         </for>
-        and
+        <if value="{flag}">
+
+        </if>
+        or
         name = {name} and 1=1
     </select>
 </sql>

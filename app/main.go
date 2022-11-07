@@ -21,7 +21,7 @@ func main() {
 		"arr":  []int{1, 2, 3, 4},
 		"name": "saber",
 	}
-	sgo := sgo.NewSqlGo()
+	sgo := sgo.NewSgo()
 	sgo.LoadXml("/sql")
 	sql, err := sgo.Sql("user.select03", ctx)
 	if err != nil {

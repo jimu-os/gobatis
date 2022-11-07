@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-func NewSqlGo() *Sgo {
+func NewSgo() *Sgo {
 	return &Sgo{
 		NameSpaces: map[string]*Sql{},
 	}
