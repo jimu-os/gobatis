@@ -18,7 +18,7 @@
         <!ATTLIST for item CDATA #REQUIRED>
         <!ATTLIST for open CDATA "(">
         <!ATTLIST for close CDATA ")">
-        <!ATTLIST for key CDATA "">
+        <!ATTLIST for column CDATA "">
         <!ATTLIST for separator CDATA ",">
         <!ATTLIST if value CDATA #REQUIRED>
 ]>
@@ -33,7 +33,7 @@
 
     <select id="select03">
         select * from student where sss={name} and
-        <for slice="{arr}" item="obj" open="(" close=")" separator="," key="id">
+        <for slice="{arr}" item="obj" open="(" close=")" separator="," column="id">
             {obj}
         </for>
         <if value="{flag}">
