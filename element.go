@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/beevik/etree"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -61,29 +62,75 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	}
 
 	// 上下文中取出 数据
-	keys := strings.Split(slice, ".")
-	kl := len(keys)
-	var v any
-	b := false
-	for i := 0; i < kl; i++ {
-		k := keys[i]
-		if i == kl-1 {
-			if v, b = ctx[k]; !b {
-				return "", fmt.Errorf("%s 'slice' key %s not find ", element.Tag, k)
-			}
-		} else {
-			if v, b = ctx[k]; !b {
-				return "", fmt.Errorf("%s 'slice' key %s not find ", element.Tag, k)
-			}
-			ctx = v.(map[string]any)
-		}
+	t := UnTemplate(slice)
+	keys := strings.Split(t[1], ".")
+	v, err := ctxValue(ctx, keys)
+	if err != nil {
+		return "", err
 	}
 	valueOf := reflect.ValueOf(v)
 	if valueOf.Kind() != reflect.Slice {
 		return "", fmt.Errorf("%s 'slice' value is not slice", element.Tag)
 	}
+	// template 预处理
+	unTemplate := UnTemplate(template)
+	split := strings.Split(unTemplate[1], ".")
+	length := len(split)
+	if length > 1 && valueOf.Type().Elem().Kind() != reflect.Map {
+		return "", fmt.Errorf("")
+	}
+	buf.WriteString(open)
+	// 解析 slice 属性迭代
+	items := []string{}
+	for i := 0; i < valueOf.Len(); i++ {
+		IndexV := valueOf.Index(i)
+		if length == 1 {
+			if IndexV.Kind() == reflect.Slice || IndexV.Kind() == reflect.Map {
+				return "", fmt.Errorf("'slice' element error")
+			}
+			a := IndexV.Interface()
+			switch a.(type) {
+			case int:
+				vi := a.(int)
+				itoa := strconv.Itoa(vi)
+				items = append(items, itoa)
+			case string:
+				items = append(items, a.(string))
+			case float64:
+				float := strconv.FormatFloat(a.(float64), 'f', 'x', 64)
+				items = append(items, float)
+			default:
+				return "", fmt.Errorf("")
+			}
+		} else {
+			if IndexV.Kind() != reflect.Map {
+				return "", fmt.Errorf("'slice' element error")
+			}
+			tctx := IndexV.Interface().(map[string]any)
+			cv, err := ctxValue(tctx, split[1:])
+			if err != nil {
+				return "", err
+			}
+			switch cv.(type) {
+			case int:
+				vi := cv.(int)
+				itoa := strconv.Itoa(vi)
+				items = append(items, itoa)
+			case string:
+				items = append(items, cv.(string))
+			case float64:
+				float := strconv.FormatFloat(cv.(float64), 'f', 'x', 64)
+				items = append(items, float)
+			default:
+				return "", fmt.Errorf("")
+			}
+		}
+	}
+	join := strings.Join(items, separator)
+	buf.WriteString(join)
+	buf.WriteString(closes)
 
-	return "", nil
+	return buf.String(), nil
 }
 
 // 把 map 或者 结构体完全转化为 map[any]
@@ -110,7 +157,7 @@ func toMap(value any) map[string]any {
 			key = strings.ToLower(key)
 			v = field.Interface()
 			if field.Kind() == reflect.Slice {
-				v = structToMap(v)
+				v = filedToMap(v)
 			}
 			if field.Kind() == reflect.Struct || field.Kind() == reflect.Pointer || field.Kind() == reflect.Map {
 				v = toMap(v)
@@ -122,11 +169,22 @@ func toMap(value any) map[string]any {
 		for mapIter.Next() {
 			key = mapIter.Key().Interface().(string)
 			vOf := mapIter.Value()
+			v = vOf.Interface()
+			if vOf.Kind() == reflect.Interface {
+				if vOf.Elem().Kind() == reflect.Slice {
+					if vOf.Elem().Type().Elem().Kind() == reflect.Struct || vOf.Elem().Type().Elem().Kind() == reflect.Pointer || vOf.Elem().Type().Elem().Kind() == reflect.Map {
+						v = filedToMap(v)
+					}
+				}
+				if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
+					v = toMap(v)
+				}
+			}
 			if vOf.Kind() == reflect.Slice {
-				v = structToMap(vOf.Interface())
+				v = filedToMap(v)
 			}
 			if vOf.Kind() == reflect.Struct || vOf.Kind() == reflect.Map || vOf.Kind() == reflect.Pointer {
-				v = toMap(vOf.Interface())
+				v = toMap(v)
 			}
 			ctx[key] = v
 		}
@@ -134,7 +192,7 @@ func toMap(value any) map[string]any {
 	return ctx
 }
 
-func structToMap(value any) []map[string]any {
+func filedToMap(value any) []map[string]any {
 	valueOf := reflect.ValueOf(value)
 	elem := valueOf.Type().Elem()
 	arr := make([]map[string]any, 0)
@@ -156,7 +214,7 @@ func structToMap(value any) []map[string]any {
 				v := iter.Value()
 				var vals any
 				if v.Kind() == reflect.Slice {
-					vals = structToMap(v.Interface())
+					vals = filedToMap(v.Interface())
 				}
 				if v.Kind() == reflect.Struct || v.Kind() == reflect.Pointer || v.Kind() == reflect.Map {
 					vals = toMap(v.Interface())
@@ -167,4 +225,32 @@ func structToMap(value any) []map[string]any {
 		}
 	}
 	return arr
+}
+
+func UnTemplate(template string) []string {
+	length := len(template)
+	return []string{template[0:1], template[1 : length-1], template[length-1:]}
+}
+
+// 上下文中取数据
+func ctxValue(ctx map[string]any, keys []string) (any, error) {
+	kl := len(keys)
+	var v any
+	b := false
+	for i := 0; i < kl; i++ {
+		k := keys[i]
+		if i == kl-1 {
+			if v, b = ctx[k]; !b {
+				return nil, fmt.Errorf("'slice' key %s not find ", k)
+			}
+		} else {
+			if v, b = ctx[k]; !b {
+				return nil, fmt.Errorf("'slice' key %s not find ", k)
+			}
+			if ctx, b = v.(map[string]any); !b {
+				return nil, fmt.Errorf("'%s' is not map or struct", k)
+			}
+		}
+	}
+	return v, nil
 }

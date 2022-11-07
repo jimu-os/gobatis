@@ -61,7 +61,7 @@ func (build *Sgo) Sql(id string, value any) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			join := strings.Join(analysis[:len(analysis)-1], " ")
+			join := strings.Join(analysis, " ")
 			return join, nil
 		}
 	}
@@ -112,6 +112,8 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return IfElement(element, template, ctx)
 	case "select", "update", "delete", "insert":
 		return StatementElement(element, template, ctx)
+	case "sql":
+		return "", nil
 	}
 	return "", errors.New("error")
 }
