@@ -54,8 +54,11 @@
     test text02
 
     <select id="select03">
+        select * from student where
         <for slice="{arr}" item="obj" index="i" open="(" close=")" separator="," key="id">
             {obj}
         </for>
+        and
+        name = {name} and 1=1
     </select>
 </sql>

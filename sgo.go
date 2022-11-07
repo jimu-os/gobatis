@@ -70,21 +70,22 @@ func (build *Sgo) Sql(id string, value any) (string, error) {
 
 // Analysis 解析xml标签，sql root (select，insert，update，delete)，不解析开始标签之前，结束标签之后的文本内容
 func Analysis(element *etree.Element, ctx map[string]any) ([]string, error) {
+	var err error
 	sql := []string{}
 	// 解析根标签 开始之后的文本
 	sqlStar := element.Text()
 	// 处理字符串前后空格
 	sqlStar = strings.TrimSpace(sqlStar)
 	//更具标签类型，对应解析字符串
-	sqlStar, err := Element(element, sqlStar, ctx)
+	sqlStar, err = Element(element, sqlStar, ctx)
 	if err != nil {
 		return nil, err
 	}
 	sql = append(sql, sqlStar)
 	// 解析子标签内容
 	child := element.ChildElements()
-	for _, element := range child {
-		analysis, err := Analysis(element, ctx)
+	for _, childElement := range child {
+		analysis, err := Analysis(childElement, ctx)
 		if err != nil {
 			return nil, err
 		}

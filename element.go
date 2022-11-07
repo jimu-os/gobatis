@@ -10,8 +10,40 @@ import (
 )
 
 func StatementElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-
-	return "", nil
+	buf := bytes.Buffer{}
+	template = strings.TrimSpace(template)
+	templateByte := []byte(template)
+	starIndex := 0
+	for i := starIndex; i < len(templateByte); {
+		if templateByte[i] == '{' {
+			starIndex = i
+			endIndex := i
+			for j := starIndex; j < len(templateByte); j++ {
+				if templateByte[j] == '}' {
+					endIndex = j
+				}
+			}
+			s := template[starIndex+1 : endIndex]
+			split := strings.Split(s, ".")
+			value, err := ctxValue(ctx, split)
+			if err != nil {
+				return "", err
+			}
+			switch value.(type) {
+			case string:
+				buf.WriteString(" '" + value.(string) + "' ")
+			case int:
+				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
+			case float64:
+				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
+			}
+			i = endIndex + 1
+			continue
+		}
+		buf.WriteByte(templateByte[i])
+		i++
+	}
+	return buf.String(), nil
 }
 
 func ForElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
