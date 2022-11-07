@@ -103,6 +103,9 @@ func toMap(value any) map[string]any {
 	case reflect.Struct:
 		for i := 0; i < valueOf.NumField(); i++ {
 			field := valueOf.Field(i)
+			if !valueOf.Type().Field(i).IsExported() {
+				continue
+			}
 			key = valueOf.Type().Field(i).Name
 			key = strings.ToLower(key)
 			v = field.Interface()
