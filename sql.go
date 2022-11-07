@@ -1,4 +1,4 @@
-package sqlgo
+package sgo
 
 import "github.com/beevik/etree"
 
