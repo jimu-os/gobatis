@@ -49,11 +49,12 @@ func (build *Sgo) LoadXml(source string) {
 	})
 }
 
-func (build *Sgo) Sql(id string, ctx map[string]any) (string, error) {
+func (build *Sgo) Sql(id string, value any) (string, error) {
 	ids := strings.Split(id, ".")
 	if len(ids) != 2 {
 		return "", errors.New("id error")
 	}
+	ctx := toMap(value)
 	if sql, b := build.NameSpaces[ids[0]]; b {
 		if element, f := sql.Statement[ids[1]]; f {
 			analysis, err := Analysis(element, ctx)

@@ -1,11 +1,12 @@
 package sgo
 
-import "testing"
+import (
+	"testing"
+)
 
 type User struct {
 	Name string
-	Bbb  *Aaa
-	Ccc  map[string]*Aaa
+	Map  []map[string][]*Aaa
 }
 
 type Aaa struct {
@@ -15,8 +16,15 @@ type Aaa struct {
 func TestMap(t *testing.T) {
 	v := User{
 		Name: "awen",
-		Bbb:  &Aaa{Name: "saber"},
-		Ccc:  map[string]*Aaa{"test": &Aaa{Name: "testCcc"}},
+		Map: []map[string][]*Aaa{
+			{
+				"a": []*Aaa{
+					&Aaa{Name: "1"},
+					&Aaa{Name: "2"},
+					&Aaa{Name: "3"},
+				},
+			},
+		},
 	}
 	ctx := toMap(v)
 	t.Log(ctx)

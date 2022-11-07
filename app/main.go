@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gitee.com/aurora-engine/sqlgo"
+	"gitee.com/aurora-engine/sgo"
 )
 
 type Student struct {
@@ -17,9 +17,12 @@ type StuMapper interface {
 type Mapper func(any)
 
 func main() {
+	ctx := map[string]any{
+		"arr": []int{1, 2, 3, 4},
+	}
 	sgo := sgo.NewSqlGo()
 	sgo.LoadXml("/sql")
-	sql, err := sgo.Sql("user.SelectStudent", nil)
+	sql, err := sgo.Sql("user.select03", ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

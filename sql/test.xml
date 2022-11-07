@@ -52,4 +52,10 @@
         7
     </select>
     test text02
+
+    <select id="select03">
+        <for slice="{arr}" item="obj" index="i" open="(" close=")" separator="," key="id">
+            {obj}
+        </for>
+    </select>
 </sql>
