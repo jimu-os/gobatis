@@ -25,6 +25,5 @@
            or cba=1
         </if>
         or  name = {name} and 1=1
-
     </select>
 </sql>

@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <!ELEMENT sql (#PCDATA|insert|select|update|delete|for|if)*>
-<!ELEMENT insert (#PCDATA|for|if)*>
-<!ELEMENT select (#PCDATA|for|if)*>
-<!ELEMENT update (#PCDATA|for|if)*>
-<!ELEMENT delete (#PCDATA|for|if)*>
-<!ELEMENT for (#PCDATA|for|if)*>
-<!ELEMENT if (#PCDATA|for|if)*>
+<!ELEMENT insert    (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT select    (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT update    (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT delete    (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT for       (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT if        (#PCDATA|insert|select|update|delete|for|if)*>
 <!ATTLIST sql namespace CDATA #REQUIRED>
 <!ATTLIST select id CDATA #REQUIRED>
 <!ATTLIST insert id CDATA #REQUIRED>
@@ -13,8 +13,8 @@
 <!ATTLIST delete id CDATA #REQUIRED>
 <!ATTLIST for slice CDATA #REQUIRED>
 <!ATTLIST for item CDATA #REQUIRED>
-<!ATTLIST for open CDATA "(">
-<!ATTLIST for close CDATA ")">
-<!ATTLIST for column CDATA "">
-<!ATTLIST for separator CDATA ",">
+<!ATTLIST for open CDATA #REQUIRED>
+<!ATTLIST for close CDATA #REQUIRED>
+<!ATTLIST for column CDATA #REQUIRED>
+<!ATTLIST for separator CDATA #REQUIRED>
 <!ATTLIST if expr CDATA #REQUIRED>

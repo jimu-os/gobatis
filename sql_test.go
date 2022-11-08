@@ -58,3 +58,49 @@ func TestExpr(t *testing.T) {
 	}
 	t.Log(run)
 }
+
+func BenchmarkExpr(b *testing.B) {
+	env := map[string]any{
+		"name": "1",
+		"ctx": map[string]any{
+			"number": map[string]any{
+				"q": 1,
+			},
+			"arr": []int{1, 2, 3, 4},
+		},
+	}
+	code := `ctx.number.q`
+	compile, err := expr.Compile(code, expr.Env(env))
+	if err != nil {
+		b.Error(err.Error())
+		return
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, err := expr.Run(compile, env)
+		if err != nil {
+			b.Error(err.Error())
+			return
+		}
+	}
+}
+
+func BenchmarkMap(b *testing.B) {
+	env := map[string]any{
+		"name": "1",
+		"ctx": map[string]any{
+			"number": map[string]any{
+				"1": 1,
+			},
+			"arr": []int{1, 2, 3, 4},
+		},
+	}
+	m := toMap(env)
+	for i := 0; i < b.N; i++ {
+		_, err := ctxValue(m, []string{"ctx", "number", "1"})
+		if err != nil {
+			b.Error(err.Error())
+			return
+		}
+	}
+}
