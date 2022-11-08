@@ -45,7 +45,7 @@ func TestExpr(t *testing.T) {
 			"arr":    []int{1, 2, 3, 4},
 		},
 	}
-	code := `ctx.arr`
+	code := "1==1 and 1==1"
 	compile, err := expr.Compile(code, expr.Env(env))
 	if err != nil {
 		t.Error(err.Error())

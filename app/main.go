@@ -9,7 +9,8 @@ type Mapper func(any)
 
 func main() {
 	ctx := map[string]any{
-		"arr":  []int{1, 2, 3, 4},
+		"arr": []int{1, 2, 3, 4},
+		//"arr":  []int{},
 		"name": "saber",
 	}
 	sgo := sgo.NewSgo()

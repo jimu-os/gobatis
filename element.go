@@ -149,7 +149,7 @@ func ifElement(element *etree.Element, template string, ctx map[string]any) (str
 		return "", fmt.Errorf("%s,attr 'expr' value is empty", element.Tag)
 	}
 	analysisExpr := AnalysisExpr(exprStr)
-	compile, err := expr.Compile(analysisExpr, expr.Env(ctx))
+	compile, err := expr.Compile(analysisExpr)
 	if err != nil {
 		return "", err
 	}
@@ -283,6 +283,7 @@ func AnalysisExpr(template string) string {
 			for j := starIndex; j < len(templateByte); j++ {
 				if templateByte[j] == '}' {
 					endIndex = j
+					break
 				}
 			}
 			s := template[starIndex+1 : endIndex]

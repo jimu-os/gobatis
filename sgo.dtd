@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
-<!ELEMENT sql (#PCDATA|insert|select|update|delete|for|if)*>
+<!ELEMENT mapper (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT insert    (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT select    (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT update    (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT delete    (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT for       (#PCDATA|insert|select|update|delete|for|if)*>
 <!ELEMENT if        (#PCDATA|insert|select|update|delete|for|if)*>
-<!ATTLIST sql namespace CDATA #REQUIRED>
+<!ATTLIST mapper namespace CDATA #REQUIRED>
 <!ATTLIST select id CDATA #REQUIRED>
 <!ATTLIST insert id CDATA #REQUIRED>
 <!ATTLIST update id CDATA #REQUIRED>
@@ -17,4 +17,4 @@
 <!ATTLIST for close CDATA #REQUIRED>
 <!ATTLIST for column CDATA #REQUIRED>
 <!ATTLIST for separator CDATA #REQUIRED>
-<!ATTLIST if expr CDATA #REQUIRED>
+<!ATTLIST if expr #PCDATA #REQUIRED>

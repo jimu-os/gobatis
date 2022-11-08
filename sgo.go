@@ -39,7 +39,7 @@ func (build *Sgo) LoadXml(source string) {
 			if err != nil {
 				return err
 			}
-			element := document.SelectElement("sql")
+			element := document.Root()
 			attr := element.SelectAttr("namespace")
 			s := NewSql(element)
 			s.LoadSqlElement()
@@ -116,7 +116,7 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return IfElement(element, template, ctx)
 	case "select", "update", "delete", "insert":
 		return StatementElement(element, template, ctx)
-	case "sql":
+	case "mapper":
 		return "", nil
 	}
 	return "", errors.New("error")
