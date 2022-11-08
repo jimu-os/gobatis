@@ -14,7 +14,7 @@
         <for slice="{arr}" item="obj" column="id" open="("  separator="," close=")" >
             {obj}
         </for>
-        <if expr="1==1">
+        <if expr="{name}=='saber1'" >
           and abc = 1
             <if expr="1==1">
                 and 1=1
@@ -24,7 +24,7 @@
             </if>
            or cba=1
         </if>
-        or
-        name = {name} and 1=1
+        or  name = {name} and 1=1
+
     </select>
 </sql>

@@ -81,19 +81,18 @@ func Analysis(element *etree.Element, ctx map[string]any) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	// if 标签解析 逻辑不通过
-	if sqlStar == "" && err == nil {
-		return sql, err
-	}
 	sql = append(sql, sqlStar)
-	// 解析子标签内容
-	child := element.ChildElements()
-	for _, childElement := range child {
-		analysis, err := Analysis(childElement, ctx)
-		if err != nil {
-			return nil, err
+	// if 标签解析 逻辑不通过
+	if sqlStar != "" && err == nil {
+		// 解析子标签内容
+		child := element.ChildElements()
+		for _, childElement := range child {
+			analysis, err := Analysis(childElement, ctx)
+			if err != nil {
+				return nil, err
+			}
+			sql = append(sql, analysis...)
 		}
-		sql = append(sql, analysis...)
 	}
 	endSql := element.Tail()
 	endSql = strings.TrimSpace(endSql)
