@@ -5,15 +5,6 @@ import (
 	"gitee.com/aurora-engine/sgo"
 )
 
-type Student struct {
-	Id   int
-	Name string
-	Age  int
-}
-type StuMapper interface {
-	SelectStudent() Student
-}
-
 type Mapper func(any)
 
 func main() {
@@ -22,7 +13,7 @@ func main() {
 		"name": "saber",
 	}
 	sgo := sgo.NewSgo()
-	sgo.LoadXml("/sql")
+	sgo.LoadXml("/")
 	sql, err := sgo.Sql("user.select03", ctx)
 	if err != nil {
 		fmt.Println(err.Error())
