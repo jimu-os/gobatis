@@ -1,27 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE sql [
-        <!ELEMENT sql (#PCDATA|insert|select|update|delete|for|if)*>
-
-        <!ELEMENT insert (#PCDATA|for|if)*>
-        <!ELEMENT select (#PCDATA|for|if)*>
-        <!ELEMENT update (#PCDATA|for|if)*>
-        <!ELEMENT delete (#PCDATA|for|if)*>
-        <!ELEMENT for (#PCDATA|for|if)*>
-        <!ELEMENT if (#PCDATA|for|if)*>
-
-        <!ATTLIST sql namespace CDATA #REQUIRED>
-        <!ATTLIST select id CDATA #REQUIRED>
-        <!ATTLIST insert id CDATA #REQUIRED>
-        <!ATTLIST update id CDATA #REQUIRED>
-        <!ATTLIST delete id CDATA #REQUIRED>
-        <!ATTLIST for slice CDATA #REQUIRED>
-        <!ATTLIST for item CDATA #REQUIRED>
-        <!ATTLIST for open CDATA "(">
-        <!ATTLIST for close CDATA ")">
-        <!ATTLIST for column CDATA "">
-        <!ATTLIST for separator CDATA ",">
-        <!ATTLIST if value CDATA #REQUIRED>
-]>
+<!DOCTYPE sql SYSTEM "http://sgo.com">
 
 <sql namespace="user">
     <select id="SelectStudent">
@@ -33,11 +11,18 @@
 
     <select id="select03">
         select * from student where sss={name} and
-        <for slice="{arr}" item="obj" open="(" close=")" separator="," column="id">
+        <for slice="{arr}" item="obj" column="id" open="("  separator="," close=")" >
             {obj}
         </for>
-        <if value="{flag}">
-
+        <if expr="1==1">
+          and abc = 1
+            <if expr="1==1">
+                and 1=1
+                <if expr="1!=1">
+                    or 1!=1
+                </if>
+            </if>
+           or cba=1
         </if>
         or
         name = {name} and 1=1

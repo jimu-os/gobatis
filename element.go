@@ -3,6 +3,7 @@ package sgo
 import (
 	"bytes"
 	"fmt"
+	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
 	"reflect"
 	"strconv"
@@ -10,40 +11,11 @@ import (
 )
 
 func StatementElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	buf := bytes.Buffer{}
-	template = strings.TrimSpace(template)
-	templateByte := []byte(template)
-	starIndex := 0
-	for i := starIndex; i < len(templateByte); {
-		if templateByte[i] == '{' {
-			starIndex = i
-			endIndex := i
-			for j := starIndex; j < len(templateByte); j++ {
-				if templateByte[j] == '}' {
-					endIndex = j
-				}
-			}
-			s := template[starIndex+1 : endIndex]
-			split := strings.Split(s, ".")
-			value, err := ctxValue(ctx, split)
-			if err != nil {
-				return "", err
-			}
-			switch value.(type) {
-			case string:
-				buf.WriteString(" '" + value.(string) + "' ")
-			case int:
-				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
-			case float64:
-				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
-			}
-			i = endIndex + 1
-			continue
-		}
-		buf.WriteByte(templateByte[i])
-		i++
+	analysisTemplate, err := AnalysisTemplate(template, ctx)
+	if err != nil {
+		return "", fmt.Errorf("%s,%s,%s", element.Tag, element.SelectAttr("id").Value, err.Error())
 	}
-	return buf.String(), nil
+	return analysisTemplate, nil
 }
 
 func ForElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
@@ -59,6 +31,7 @@ func ForElement(element *etree.Element, template string, ctx map[string]any) (st
 func IfElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
 	switch element.Tag {
 	case "if":
+		return ifElement(element, template, ctx)
 	case "select", "update", "delete", "insert":
 		return StatementElement(element, template, ctx)
 	}
@@ -68,7 +41,7 @@ func IfElement(element *etree.Element, template string, ctx map[string]any) (str
 func forElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
 	var slice, item, open, closes, separator, key string
 	buf := bytes.Buffer{}
-	key = element.SelectAttr("key").Value
+	key = element.SelectAttr("column").Value
 	if key != "" {
 		buf.WriteString(key + " IN ")
 	}
@@ -163,6 +136,39 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	buf.WriteString(closes)
 
 	return buf.String(), nil
+}
+
+func ifElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
+	var attr *etree.Attr
+	attr = element.SelectAttr("expr")
+	if attr == nil {
+		return "", fmt.Errorf("%s,attr 'expr' not found", element.Tag)
+	}
+	exprStr := attr.Value
+	if exprStr == "" {
+		return "", fmt.Errorf("%s,attr 'expr' value is empty", element.Tag)
+	}
+	analysisExpr := AnalysisExpr(exprStr)
+	compile, err := expr.Compile(analysisExpr, expr.Env(ctx))
+	if err != nil {
+		return "", err
+	}
+	run, err := expr.Run(compile, ctx)
+	if err != nil {
+		return "", err
+	}
+	var flag, f bool
+	if flag, f = run.(bool); !f {
+		return "", fmt.Errorf("%s,expr result is not bool type", element.Tag)
+	}
+	if flag {
+		analysisTemplate, err := AnalysisTemplate(template, ctx)
+		if err != nil {
+			return "", fmt.Errorf("%s,template '%s'. %s", element.Tag, template, err.Error())
+		}
+		return analysisTemplate, nil
+	}
+	return "", nil
 }
 
 // 把 map 或者 结构体完全转化为 map[any]
@@ -262,6 +268,70 @@ func filedToMap(value any) []map[string]any {
 func UnTemplate(template string) []string {
 	length := len(template)
 	return []string{template[0:1], template[1 : length-1], template[length-1:]}
+}
+
+// AnalysisExpr 翻译表达式
+func AnalysisExpr(template string) string {
+	buf := bytes.Buffer{}
+	template = strings.TrimSpace(template)
+	templateByte := []byte(template)
+	starIndex := 0
+	for i := starIndex; i < len(templateByte); {
+		if templateByte[i] == '{' {
+			starIndex = i
+			endIndex := i
+			for j := starIndex; j < len(templateByte); j++ {
+				if templateByte[j] == '}' {
+					endIndex = j
+				}
+			}
+			s := template[starIndex+1 : endIndex]
+			buf.WriteString(" " + s + " ")
+			i = endIndex + 1
+			continue
+		}
+		buf.WriteByte(templateByte[i])
+		i++
+	}
+	return buf.String()
+}
+
+// AnalysisTemplate 模板解析器
+func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
+	buf := bytes.Buffer{}
+	template = strings.TrimSpace(template)
+	templateByte := []byte(template)
+	starIndex := 0
+	for i := starIndex; i < len(templateByte); {
+		if templateByte[i] == '{' {
+			starIndex = i
+			endIndex := i
+			for j := starIndex; j < len(templateByte); j++ {
+				if templateByte[j] == '}' {
+					endIndex = j
+				}
+			}
+			s := template[starIndex+1 : endIndex]
+			split := strings.Split(s, ".")
+			value, err := ctxValue(ctx, split)
+			if err != nil {
+				return "", fmt.Errorf("%s,'%s' not found", template, s)
+			}
+			switch value.(type) {
+			case string:
+				buf.WriteString(" '" + value.(string) + "' ")
+			case int:
+				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
+			case float64:
+				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
+			}
+			i = endIndex + 1
+			continue
+		}
+		buf.WriteByte(templateByte[i])
+		i++
+	}
+	return buf.String(), nil
 }
 
 // 上下文中取数据
