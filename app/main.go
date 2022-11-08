@@ -5,13 +5,10 @@ import (
 	"gitee.com/aurora-engine/sgo"
 )
 
-type Mapper func(any)
-
 func main() {
 	ctx := map[string]any{
-		"arr": []int{1, 2, 3, 4},
-		//"arr":  []int{},
-		"name": "saber",
+		"arr":  []int{1, 2, 3, 4},
+		"name": "test",
 	}
 	sgo := sgo.NewSgo()
 	sgo.LoadXml("/")
