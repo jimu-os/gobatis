@@ -12,7 +12,7 @@ func main() {
 	}
 	sgo := sgo.NewSgo()
 	sgo.LoadXml("/")
-	sql, err := sgo.Sql("user.select03", ctx)
+	sql, err := sgo.Sql("user.find", ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 	}
