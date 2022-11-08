@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func resultMapping(row *sql.Rows, condition any) []any {
+func resultMapping(row *sql.Rows, resultType any) []any {
 	of := reflect.ValueOf(row)
 	// 确定数据库 列顺序 排列扫描顺序
 	columns, err := row.Columns()
@@ -18,20 +18,20 @@ func resultMapping(row *sql.Rows, condition any) []any {
 	// 拿到 scan 方法
 	scan := of.MethodByName("Scan")
 	next := of.MethodByName("Next")
-	t := reflect.SliceOf(reflect.TypeOf(condition))
+	t := reflect.SliceOf(reflect.TypeOf(resultType))
 	result := reflect.MakeSlice(t, 0, 0)
 	for (next.Call(nil))[0].Interface().(bool) {
 		var value, unValue reflect.Value
-		if reflect.TypeOf(condition).Kind() == reflect.Ptr {
+		if reflect.TypeOf(resultType).Kind() == reflect.Ptr {
 			//创建一个 接收结果集的变量
-			value = reflect.New(reflect.TypeOf(condition).Elem())
+			value = reflect.New(reflect.TypeOf(resultType).Elem())
 			unValue = value.Elem()
 		} else {
-			value = reflect.New(reflect.TypeOf(condition))
+			value = reflect.New(reflect.TypeOf(resultType))
 			value = value.Elem()
 			unValue = value
 		}
-		mapping := structMapping(condition)
+		mapping := structMapping(resultType)
 		// 创建 接收器
 		values, fieldIndexMap := buildScan(unValue, columns, mapping)
 		// 执行扫描, 执行结果扫描，不处理error 扫码结果类型不匹配，默认为零值
