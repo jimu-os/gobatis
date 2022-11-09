@@ -2,6 +2,7 @@ package sgo
 
 import (
 	"errors"
+	"fmt"
 	"github.com/beevik/etree"
 	"io/fs"
 	"os"
@@ -89,7 +90,7 @@ func Analysis(element *etree.Element, ctx map[string]any) ([]string, error) {
 		for _, childElement := range child {
 			analysis, err := Analysis(childElement, ctx)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("%s -> %s error,%s", element.Tag, childElement.Tag, err.Error())
 			}
 			sql = append(sql, analysis...)
 		}

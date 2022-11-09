@@ -12,14 +12,14 @@
         </if>
 
         <if expr="{name}=='aaa'" >
-          and abc = 1
+          and abc = {name}
             <if expr="1==1">
-                and 1=1
-                <if expr="1!=1">
-                    or 1!=1
+                and 1={name}
+                <if expr="1==1">
+                    or 1!={name}
                 </if>
             </if>
-           or cba=1
+           or cba={name}
         </if>
         or  name = {name} and 1=1
     </select>

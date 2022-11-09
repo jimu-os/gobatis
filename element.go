@@ -18,49 +18,68 @@ func StatementElement(element *etree.Element, template string, ctx map[string]an
 }
 
 func ForElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	switch element.Tag {
-	case "for":
-		return forElement(element, template, ctx)
-	case "select", "update", "delete", "insert":
-		return StatementElement(element, template, ctx)
-	}
-	return "", nil
+	return forElement(element, template, ctx)
 }
 
 func IfElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	switch element.Tag {
-	case "if":
-		return ifElement(element, template, ctx)
-	case "select", "update", "delete", "insert":
-		return StatementElement(element, template, ctx)
-	}
-	return "", nil
+	return ifElement(element, template, ctx)
 }
 
 func forElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	var slice, item, open, closes, separator, key string
+	var slice, item, open, closes, separator, column string
+	var attr *etree.Attr
 	buf := bytes.Buffer{}
-	key = element.SelectAttr("column").Value
-	if key != "" {
-		buf.WriteString(key + " IN ")
+
+	attr = element.SelectAttr("column")
+	if attr == nil {
+		return "", fmt.Errorf("%s column is not found", element.Tag)
 	}
-	slice = element.SelectAttr("slice").Value
+	column = attr.Value
+	if column != "" {
+		buf.WriteString(column + " IN ")
+	}
+
+	attr = element.SelectAttr("slice")
+	if attr == nil {
+		return "", fmt.Errorf("%s slice is not found", element.Tag)
+	}
+	slice = attr.Value
 	if slice == "" {
 		return "", fmt.Errorf("%s 'slice' Attr not empty", element.Tag)
 	}
-	item = element.SelectAttr("item").Value
+
+	attr = element.SelectAttr("item")
+	if attr == nil {
+		return "", fmt.Errorf("%s item is not found", element.Tag)
+	}
+	item = attr.Value
 	if item == "" {
 		return "", fmt.Errorf("%s 'item' Attr not empty", element.Tag)
 	}
-	open = element.SelectAttr("open").Value
+
+	attr = element.SelectAttr("open")
+	if attr == nil {
+		return "", fmt.Errorf("%s open is not found", element.Tag)
+	}
+	open = attr.Value
 	if open == "" {
 		open = "("
 	}
-	closes = element.SelectAttr("close").Value
+
+	attr = element.SelectAttr("close")
+	if attr == nil {
+		return "", fmt.Errorf("%s close is not found", element.Tag)
+	}
+	closes = attr.Value
 	if closes == "" {
 		closes = ")"
 	}
-	separator = element.SelectAttr("separator").Value
+
+	attr = element.SelectAttr("separator")
+	if attr == nil {
+		return "", fmt.Errorf("%s separator is not found", element.Tag)
+	}
+	separator = attr.Value
 	if separator == "" {
 		separator = ","
 	}
@@ -87,17 +106,16 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	switch valueOf.Kind() {
 	case reflect.Slice, reflect.Array:
 		combine.Politic = Slice{}
-		each, err := combine.ForEach()
-		if err != nil {
-			return "", err
-		}
-		result = each
 	case reflect.Struct:
-
+		combine.Politic = Struct{}
 	case reflect.Pointer:
-
+		combine.Politic = Pointer{}
 	default:
 		return "", fmt.Errorf("%s is not list", unTemplate)
+	}
+	result, err = combine.ForEach()
+	if err != nil {
+		return "", err
 	}
 	buf.WriteString(result)
 	buf.WriteString(closes)
@@ -238,10 +256,16 @@ func filedToMap(value any) []map[string]any {
 	return arr
 }
 
-// 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理
+// 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理，如果是复杂数据类型，应该直接添加到ctx，并返回true
 func dataType(key string, value any, ctx map[string]any) bool {
 
 	return false
+}
+
+// 模板解析处理复杂数据类型
+func dataHandle(value any) string {
+
+	return ""
 }
 
 func UnTemplate(template string) []string {
@@ -340,13 +364,4 @@ func ctxValue(ctx map[string]any, keys []string) (any, error) {
 		}
 	}
 	return v, nil
-}
-
-func dataHandle(value any) string {
-
-	return ""
-}
-
-func forCheck(value any) {
-
 }
