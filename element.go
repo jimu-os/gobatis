@@ -332,13 +332,16 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
 			}
 			switch value.(type) {
 			case string:
-				buf.WriteString(" '" + value.(string) + "' ")
+				buf.WriteString(fmt.Sprintf(" '%s' ", value.(string)))
 			case int:
 				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
 			case float64:
 				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
 			default:
 				// 其他复杂数据类型
+				if handle := dataHandle(value); handle != "" {
+					buf.WriteString(" " + handle + " ")
+				}
 			}
 			i = endIndex + 1
 			continue
@@ -370,4 +373,9 @@ func ctxValue(ctx map[string]any, keys []string) (any, error) {
 		}
 	}
 	return v, nil
+}
+
+func dataHandle(value any) string {
+
+	return ""
 }
