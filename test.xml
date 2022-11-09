@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE mapper SYSTEM "https://gitee.com/aurora-engine/sgo/blob/master/sgo.dtd">
 
-<mapper namespace="user">
+<mapper namespace="UserMapper">
     <select id="find">
         select * from student where sss={name}
         <if expr="{arr}!=nil and {len(arr)}>0">
@@ -23,4 +23,13 @@
         </if>
         or  name = {name} and 1=1
     </select>
+
+    <select id="FindUser">
+        select * from comm_user where user_id={id}
+    </select>
+
+    <select id="UserSelect">
+        select * from comm_user where user_id={id}
+    </select>
+
 </mapper>

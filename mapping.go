@@ -10,14 +10,14 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func Mapper(sgo *Sgo, id string, result []reflect.Value) MapperFunc {
+func Mapper(sgo *Sgo, id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 
-		return []reflect.Value{}
+		return result
 	}
 }
 
-func InitMapper(sgo *Sgo, id string, fun reflect.Value) {
+func InitMapper(sgo *Sgo, id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	varr := make([]reflect.Value, 0)
 	for i := 0; i < numOut; i++ {
