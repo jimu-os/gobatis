@@ -6,7 +6,6 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -74,9 +73,6 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		return "", err
 	}
 	valueOf := reflect.ValueOf(v)
-	if valueOf.Kind() != reflect.Slice {
-		return "", fmt.Errorf("%s 'slice' value is not slice", element.Tag)
-	}
 	// template 预处理
 	unTemplate := UnTemplate(template)
 	split := strings.Split(unTemplate[1], ".")
@@ -85,54 +81,25 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		return "", fmt.Errorf("")
 	}
 	buf.WriteString(open)
+	var result string
 	// 解析 slice 属性迭代
-	items := []string{}
-	for i := 0; i < valueOf.Len(); i++ {
-		IndexV := valueOf.Index(i)
-		if length == 1 {
-			if IndexV.Kind() == reflect.Slice || IndexV.Kind() == reflect.Map {
-				return "", fmt.Errorf("'slice' element error")
-			}
-			a := IndexV.Interface()
-			switch a.(type) {
-			case int:
-				vi := a.(int)
-				itoa := strconv.Itoa(vi)
-				items = append(items, itoa)
-			case string:
-				items = append(items, a.(string))
-			case float64:
-				float := strconv.FormatFloat(a.(float64), 'f', 'x', 64)
-				items = append(items, float)
-			default:
-				return "", fmt.Errorf("")
-			}
-		} else {
-			if IndexV.Kind() != reflect.Map {
-				return "", fmt.Errorf("'slice' element error")
-			}
-			tctx := IndexV.Interface().(map[string]any)
-			cv, err := ctxValue(tctx, split[1:])
-			if err != nil {
-				return "", err
-			}
-			switch cv.(type) {
-			case int:
-				vi := cv.(int)
-				itoa := strconv.Itoa(vi)
-				items = append(items, itoa)
-			case string:
-				items = append(items, cv.(string))
-			case float64:
-				float := strconv.FormatFloat(cv.(float64), 'f', 'x', 64)
-				items = append(items, float)
-			default:
-				return "", fmt.Errorf("")
-			}
+	combine := Combine{Value: v, Ctx: ctx, Keys: split}
+	switch valueOf.Kind() {
+	case reflect.Slice, reflect.Array:
+		combine.Politic = Slice{}
+		each, err := combine.ForEach()
+		if err != nil {
+			return "", err
 		}
+		result = each
+	case reflect.Struct:
+
+	case reflect.Pointer:
+
+	default:
+		return "", fmt.Errorf("%s is not list", unTemplate)
 	}
-	join := strings.Join(items, separator)
-	buf.WriteString(join)
+	buf.WriteString(result)
 	buf.WriteString(closes)
 
 	return buf.String(), nil
@@ -378,4 +345,8 @@ func ctxValue(ctx map[string]any, keys []string) (any, error) {
 func dataHandle(value any) string {
 
 	return ""
+}
+
+func forCheck(value any) {
+
 }
