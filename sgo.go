@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -47,6 +48,36 @@ func (build *Build) LoadMapper(source string) {
 		}
 		return nil
 	})
+}
+
+func (build *Build) ScanMappers(mappers ...any) {
+	for i := 0; i < len(mappers); i++ {
+		mapper := mappers[i]
+		vf := reflect.ValueOf(mapper)
+		if vf.Kind() != reflect.Pointer {
+			panic("")
+		}
+		if vf.Elem().Kind() != reflect.Struct {
+			panic("")
+		}
+		vf = vf.Elem()
+		namespace := vf.Type().String()
+		namespace = Namespace(namespace)
+		for j := 0; j < vf.NumField(); j++ {
+			key := make([]string, 0)
+			key = append(key, namespace)
+			structField := vf.Type().Field(i)
+			field := vf.Field(j)
+			if !structField.IsExported() {
+				continue
+			}
+			if b, err := MapperCheck(field); !b {
+				panic(err)
+			}
+			key = append(key, structField.Name)
+			build.initMapper(key, field)
+		}
+	}
 }
 
 func (build *Build) Sql(id string, value any) (string, error) {
@@ -139,4 +170,26 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return "", nil
 	}
 	return "", errors.New("error")
+}
+
+func Namespace(namespace string) string {
+	if index := strings.LastIndex(namespace, "."); index != -1 {
+		return namespace[index+1:]
+	}
+	return namespace
+}
+
+// MapperCheck 检查 Mapper 函数是否符合规范
+func MapperCheck(fun reflect.Value) (bool, error) {
+	if fun.Type().NumIn() != 1 {
+		return false, errors.New("there can only be one argument")
+	}
+	if fun.Type().NumOut() != 2 {
+		return false, errors.New("there can only be two return values")
+	}
+	out := fun.Type().Out(1)
+	if !out.Implements(reflect.TypeOf(new(error)).Elem()) {
+		return false, errors.New("the second return value must be error")
+	}
+	return true, nil
 }

@@ -11,8 +11,9 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func Mapper(build *Build, id []string, result []reflect.Value) MapperFunc {
+func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
+		fmt.Printf("%s %s \n", result[0].Type().String(), result[1].Type().String())
 		err := result[1].Interface()
 		//value := result[0]
 		get, err := build.Get(id, values[0].Interface())
@@ -25,7 +26,7 @@ func Mapper(build *Build, id []string, result []reflect.Value) MapperFunc {
 	}
 }
 
-func InitMapper(build *Build, id []string, fun reflect.Value) {
+func (build *Build) initMapper(id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	values := make([]reflect.Value, 0)
 	for i := 0; i < numOut; i++ {
@@ -33,7 +34,7 @@ func InitMapper(build *Build, id []string, fun reflect.Value) {
 		elem := reflect.New(out).Elem()
 		values = append(values, elem)
 	}
-	f := reflect.MakeFunc(fun.Type(), Mapper(build, id, values))
+	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
 	fun.Set(f)
 }
 
@@ -44,6 +45,7 @@ func resultMapping(row *sql.Rows, resultType any) []any {
 	if err != nil {
 		panic(err.Error())
 	}
+	// 校验 resultType 是否覆盖了结果集
 	// 解析结构体 映射字段
 	// 拿到 scan 方法
 	scan := of.MethodByName("Scan")
@@ -159,4 +161,8 @@ func structMapping(s any) map[string]string {
 		}
 	}
 	return mapp
+}
+
+func ormCheck() {
+
 }
