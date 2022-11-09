@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"gitee.com/aurora-engine/sgo"
 	"reflect"
+	"strings"
 )
 
 // UserModel 用户模型
@@ -19,29 +21,65 @@ type UserModel struct {
 }
 
 type UserMapper struct {
-	FindUser   func(ctx any) UserModel
-	UserSelect func(ctx any) map[string]any
+	FindUser   func(ctx any) (UserModel, error)
+	UserSelect func(ctx any) (map[string]any, error)
 }
 
 func main() {
 	ctx := map[string]any{
 		"id": "3de784d9a29243cdbe77334135b8a282",
 	}
-	sgo := sgo.NewSgo()
-	sgo.LoadXml("/")
-	mapper := UserMapper{}
-	Init(&mapper, sgo)
+	sgo := sgo.New()
+	sgo.LoadMapper("/")
+	mapper := &UserMapper{}
+	Init(mapper, sgo)
 	mapper.FindUser(ctx)
 }
 
-func Init(mapper any, build *sgo.Sgo) {
-	of := reflect.ValueOf(mapper).Elem()
-	namespace := of.Type().String()
-	for i := 0; i < of.NumField(); i++ {
+func Init(mapper any, build *sgo.Build) {
+	vf := reflect.ValueOf(mapper)
+	if vf.Kind() != reflect.Pointer {
+		panic("")
+	}
+	if vf.Elem().Kind() != reflect.Struct {
+		panic("")
+	}
+	vf = vf.Elem()
+	namespace := vf.Type().String()
+	namespace = Namespace(namespace)
+	for i := 0; i < vf.NumField(); i++ {
 		key := make([]string, 0)
 		key = append(key, namespace)
-		structField := of.Type().Field(i)
+		structField := vf.Type().Field(i)
+		if !structField.IsExported() {
+			continue
+		}
+		if b, err := MapperCheck(vf.Field(i)); !b {
+			panic(err)
+		}
 		key = append(key, structField.Name)
-		sgo.InitMapper(build, key, of.Field(i))
+		sgo.InitMapper(build, key, vf.Field(i))
 	}
+}
+
+func Namespace(namespace string) string {
+	if index := strings.LastIndex(namespace, "."); index != -1 {
+		return namespace[index+1:]
+	}
+	return namespace
+}
+
+// MapperCheck 检查 Mapper 函数是否符合规范
+func MapperCheck(fun reflect.Value) (bool, error) {
+	if fun.Type().NumIn() != 1 {
+		return false, errors.New("there can only be one argument")
+	}
+	if fun.Type().NumOut() != 2 {
+		return false, errors.New("there can only be two return values")
+	}
+	out := fun.Type().Out(1)
+	if !out.Implements(reflect.TypeOf(new(error)).Elem()) {
+		return false, errors.New("the second return value must be error")
+	}
+	return true, nil
 }

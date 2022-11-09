@@ -10,19 +10,19 @@ import (
 	"strings"
 )
 
-func NewSgo() *Sgo {
-	return &Sgo{
+func New() *Build {
+	return &Build{
 		NameSpaces: map[string]*Sql{},
 	}
 }
 
-type Sgo struct {
+type Build struct {
 	SqlSource string
 	// 保存所有的 xml 解析
 	NameSpaces map[string]*Sql
 }
 
-func (build *Sgo) LoadXml(source string) {
+func (build *Build) LoadMapper(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}
@@ -31,7 +31,6 @@ func (build *Sgo) LoadXml(source string) {
 		return
 	}
 	root := filepath.Join(getwd, build.SqlSource)
-
 	// 解析 xml
 	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".xml") {
@@ -50,7 +49,7 @@ func (build *Sgo) LoadXml(source string) {
 	})
 }
 
-func (build *Sgo) Sql(id string, value any) (string, error) {
+func (build *Build) Sql(id string, value any) (string, error) {
 	ids := strings.Split(id, ".")
 	if len(ids) != 2 {
 		return "", errors.New("id error")
@@ -58,6 +57,24 @@ func (build *Sgo) Sql(id string, value any) (string, error) {
 	ctx := toMap(value)
 	if sql, b := build.NameSpaces[ids[0]]; b {
 		if element, f := sql.Statement[ids[1]]; f {
+			analysis, err := Analysis(element, ctx)
+			if err != nil {
+				return "", err
+			}
+			join := strings.Join(analysis, " ")
+			return join, nil
+		}
+	}
+	return "", nil
+}
+
+func (build *Build) Get(id []string, value any) (string, error) {
+	if len(id) != 2 {
+		return "", errors.New("id error")
+	}
+	ctx := toMap(value)
+	if sql, b := build.NameSpaces[id[0]]; b {
+		if element, f := sql.Statement[id[1]]; f {
 			analysis, err := Analysis(element, ctx)
 			if err != nil {
 				return "", err

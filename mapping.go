@@ -2,6 +2,7 @@ package sgo
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/druidcaesa/ztool"
 	"reflect"
 	"time"
@@ -10,22 +11,29 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func Mapper(sgo *Sgo, id []string, result []reflect.Value) MapperFunc {
+func Mapper(build *Build, id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-
+		err := result[1].Interface()
+		//value := result[0]
+		get, err := build.Get(id, values[0].Interface())
+		if err != nil {
+			result[1].Set(reflect.ValueOf(err))
+			return result
+		}
+		fmt.Println(get)
 		return result
 	}
 }
 
-func InitMapper(sgo *Sgo, id []string, fun reflect.Value) {
+func InitMapper(build *Build, id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
-	varr := make([]reflect.Value, 0)
+	values := make([]reflect.Value, 0)
 	for i := 0; i < numOut; i++ {
 		out := fun.Type().Out(i)
 		elem := reflect.New(out).Elem()
-		varr = append(varr, elem)
+		values = append(values, elem)
 	}
-	f := reflect.MakeFunc(fun.Type(), Mapper(sgo, id, varr))
+	f := reflect.MakeFunc(fun.Type(), Mapper(build, id, values))
 	fun.Set(f)
 }
 
