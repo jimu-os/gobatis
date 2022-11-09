@@ -194,6 +194,9 @@ func toMap(value any) map[string]any {
 			key = valueOf.Type().Field(i).Name
 			key = strings.ToLower(key)
 			v = field.Interface()
+			if dataType(key, v, ctx) {
+				continue
+			}
 			if field.Kind() == reflect.Slice {
 				v = filedToMap(v)
 			}
@@ -217,6 +220,9 @@ func toMap(value any) map[string]any {
 				if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
 					v = toMap(v)
 				}
+			}
+			if dataType(key, v, ctx) {
+				continue
 			}
 			if vOf.Kind() == reflect.Slice {
 				v = filedToMap(v)
@@ -263,6 +269,12 @@ func filedToMap(value any) []map[string]any {
 		}
 	}
 	return arr
+}
+
+// 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理
+func dataType(key string, value any, ctx map[string]any) bool {
+
+	return false
 }
 
 func UnTemplate(template string) []string {
@@ -325,6 +337,8 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
 				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
 			case float64:
 				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
+			default:
+				// 其他复杂数据类型
 			}
 			i = endIndex + 1
 			continue

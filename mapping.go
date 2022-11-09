@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type Mapper[T any] func(ctx any) T
+
+func UserFind[T any](id string) Mapper[T] {
+	return func(ctx any) T {
+		var t T
+		return t
+	}
+}
+
 func resultMapping(row *sql.Rows, resultType any) []any {
 	of := reflect.ValueOf(row)
 	// 确定数据库 列顺序 排列扫描顺序
@@ -22,7 +31,7 @@ func resultMapping(row *sql.Rows, resultType any) []any {
 	result := reflect.MakeSlice(t, 0, 0)
 	for (next.Call(nil))[0].Interface().(bool) {
 		var value, unValue reflect.Value
-		if reflect.TypeOf(resultType).Kind() == reflect.Ptr {
+		if reflect.TypeOf(resultType).Kind() == reflect.Pointer {
 			//创建一个 接收结果集的变量
 			value = reflect.New(reflect.TypeOf(resultType).Elem())
 			unValue = value.Elem()
@@ -116,11 +125,10 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 // 生成结构体 映射匹配
 func structMapping(s any) map[string]string {
 	mapp := make(map[string]string)
-	var of reflect.Type
-	if reflect.TypeOf(s).Kind() == reflect.Ptr {
-		of = reflect.TypeOf(s).Elem()
-	} else {
-		of = reflect.TypeOf(s)
+	of := reflect.TypeOf(s)
+	if of.Kind() == reflect.Pointer {
+		tf := reflect.ValueOf(s).Elem()
+		return structMapping(tf.Interface())
 	}
 	for i := 0; i < of.NumField(); i++ {
 		field := of.Field(i)
