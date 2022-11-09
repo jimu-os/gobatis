@@ -69,7 +69,7 @@ func (build *Sgo) Sql(id string, value any) (string, error) {
 	return "", nil
 }
 
-// Analysis 解析xml标签，sql root (select，insert，update，delete)，不解析开始标签之前，结束标签之后的文本内容
+// Analysis 解析xml标签
 func Analysis(element *etree.Element, ctx map[string]any) ([]string, error) {
 	var err error
 	sql := []string{}
@@ -118,6 +118,7 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 	case "select", "update", "delete", "insert":
 		return StatementElement(element, template, ctx)
 	case "mapper":
+		// 对根标签不做任何处理
 		return "", nil
 	}
 	return "", errors.New("error")
