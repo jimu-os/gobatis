@@ -7,13 +7,26 @@ import (
 	"time"
 )
 
-type Mapper[T any] func(ctx any) T
+type MapperFunc func([]reflect.Value) []reflect.Value
 
-func UserFind[T any](id string) Mapper[T] {
-	return func(ctx any) T {
-		var t T
-		return t
+// Mapper 创建 映射函数
+func Mapper(sgo *Sgo, id string, result []reflect.Value) MapperFunc {
+	return func(values []reflect.Value) []reflect.Value {
+
+		return []reflect.Value{}
 	}
+}
+
+func InitMapper(sgo *Sgo, id string, fun reflect.Value) {
+	numOut := fun.Type().NumOut()
+	varr := make([]reflect.Value, 0)
+	for i := 0; i < numOut; i++ {
+		out := fun.Type().Out(i)
+		elem := reflect.New(out).Elem()
+		varr = append(varr, elem)
+	}
+	f := reflect.MakeFunc(fun.Type(), Mapper(sgo, id, varr))
+	fun.Set(f)
 }
 
 func resultMapping(row *sql.Rows, resultType any) []any {

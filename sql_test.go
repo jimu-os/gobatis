@@ -1,7 +1,9 @@
 package sgo
 
 import (
+	"fmt"
 	"github.com/antonmedv/expr"
+	"reflect"
 	"testing"
 )
 
@@ -59,12 +61,37 @@ func TestExpr(t *testing.T) {
 	t.Log(run)
 }
 
-func TestMaps(t *testing.T) {
-	m := map[string]any{}
-	data("key", 1, m)
-	t.Log(m)
+type Mappers struct {
+	UserFind func(ctx any) map[string]any
 }
 
-func data(key string, value any, ctx map[string]any) {
-	ctx[key] = value
+func TestMaps(t *testing.T) {
+	mapper := Mappers{}
+	of := reflect.ValueOf(mapper)
+	fmt.Println(of.NumField())
+	field := of.Field(0)
+	fmt.Println(field.Kind())
+	fnt := field.Type()
+	fmt.Println(fnt.String())
+	fmt.Println(fnt.In(0).String())
+	fmt.Println(fnt.In(0).Kind())
+	fmt.Println(fnt.Out(0).String())
+	fmt.Println(fnt.Out(0).Kind())
+
+	mapperFunc := func(ctx any) MapperFunc {
+		return func(values []reflect.Value) []reflect.Value {
+			Ctx := ctx
+			fmt.Println(Ctx)
+			return []reflect.Value{reflect.ValueOf(map[string]any{})}
+		}
+	}
+
+	makeMapper := func(v, ctx any) {
+		fn := reflect.ValueOf(v).Elem()
+		f := reflect.MakeFunc(fn.Type(), mapperFunc(ctx))
+		fn.Set(f)
+	}
+	makeMapper(&mapper.UserFind, map[string]any{"1": 1})
+	find := mapper.UserFind(nil)
+	fmt.Println(find)
 }
