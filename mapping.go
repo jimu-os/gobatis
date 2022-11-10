@@ -28,38 +28,23 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 		}
 		switch tag {
 		case Select:
-			//TODO
 			query, err = build.DB.Query(statements)
-		case Insert:
-			//TODO
-			exec, err = build.DB.Exec(statements)
-		case Update:
-			//TODO
-			exec, err = build.DB.Exec(statements)
-		case Delete:
-			//TODO
-			exec, err = build.DB.Exec(statements)
-		}
-
-		if result[0].Kind() == reflect.Slice {
-			resultType = reflect.New(result[0].Type().Elem()).Elem()
-		} else {
-			resultType = result[0]
-		}
-		value = resultMapping(query, resultType.Interface())
-		switch tag {
-		case Select:
-			//TODO
+			if err != nil {
+				goto end
+			}
+			if result[0].Kind() == reflect.Slice {
+				resultType = reflect.New(result[0].Type().Elem()).Elem()
+			} else {
+				resultType = result[0]
+			}
+			value = resultMapping(query, resultType.Interface())
 			SelectResultMapper(value, result)
-		case Insert:
-			//TODO
-			InsertResultMapper(value, result, exec)
-		case Update:
-			//TODO
-			UpdateResultMapper(value, result, exec)
-		case Delete:
-			//TODO
-			DeleteResultMapper(value, result, exec)
+		case Insert, Update, Delete:
+			exec, err = build.DB.Exec(statements)
+			if err != nil {
+				goto end
+			}
+			err = ExecResultMapper(result, exec)
 		}
 	end:
 		if len(result) > 1 && err != nil {
@@ -249,8 +234,6 @@ func ResultMapping(value any) map[string]string {
 				mapp[get] = field.Name
 			}
 		}
-	case reflect.Map:
-		return nil
 	default:
 		return nil
 	}
@@ -316,14 +299,23 @@ func SelectResultMapper(value reflect.Value, result []reflect.Value) {
 	}
 }
 
-func InsertResultMapper(value reflect.Value, result []reflect.Value, exec sql.Result) {
-
-}
-
-func UpdateResultMapper(value reflect.Value, result []reflect.Value, exec sql.Result) {
-
-}
-
-func DeleteResultMapper(value reflect.Value, result []reflect.Value, exec sql.Result) {
-
+func ExecResultMapper(result []reflect.Value, exec sql.Result) error {
+	length := len(result)
+	for i := 0; i < length; i++ {
+		if i == 0 {
+			affected, err := exec.RowsAffected()
+			if err != nil {
+				return err
+			}
+			result[i].Set(reflect.ValueOf(affected))
+		}
+		if i == 1 {
+			affected, err := exec.LastInsertId()
+			if err != nil {
+				return err
+			}
+			result[i].Set(reflect.ValueOf(affected))
+		}
+	}
+	return nil
 }

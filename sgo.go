@@ -26,7 +26,7 @@ type Build struct {
 	NameSpaces map[string]*Sql
 }
 
-func (build *Build) LoadMapper(source string) {
+func (build *Build) Source(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}

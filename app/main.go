@@ -30,13 +30,13 @@ func main() {
 	ctx := map[string]any{
 		"id": "3de784d9a29243cdbe77334135b8a282",
 	}
-	open, err := sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community")
+	open, err := sql.Open("mysql", "root:xxxxx@2022@tcp(82.157.160.117:3306)/community")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	build := sgo.New(open)
-	build.LoadMapper("/")
+	build.Source("/")
 	mapper := &UserMapper{}
 	build.ScanMappers(mapper)
 	user, err := mapper.FindUser(ctx)
