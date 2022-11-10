@@ -22,7 +22,7 @@ type UserModel struct {
 
 // UserMapper s
 type UserMapper struct {
-	FindUser   func(ctx any) (string, error)
+	FindUser   func(ctx any) (int, error)
 	UserSelect func(ctx any) (map[string]any, error)
 }
 

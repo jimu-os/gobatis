@@ -62,7 +62,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 			DeleteResultMapper(value, result, exec)
 		}
 	end:
-		if len(result) > 1 {
+		if len(result) > 1 && err != nil {
 			errType = reflect.ValueOf(err)
 			outEnd := result[len(result)-1]
 			if errType.Type().AssignableTo(outEnd.Type()) {
@@ -147,6 +147,10 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 	// 存储的 也将是指针的反射形式
 	fieldIndexMap := make(map[int]reflect.Value)
 	MapKey := make(map[int]string)
+	if len(columns) == 1 {
+		values = append(values, value.Addr())
+		return values, fieldIndexMap, MapKey
+	}
 	// 创建 接收器
 	for index, column := range columns {
 
