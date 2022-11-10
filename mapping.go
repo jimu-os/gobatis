@@ -143,7 +143,6 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 	}
 	// 创建 接收器
 	for index, column := range columns {
-
 		if resultColumn == nil {
 			MapKey[index] = column
 			values = append(values, reflect.New(reflect.TypeOf("")))
@@ -153,6 +152,10 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		name := resultColumn[column]
 		// 找到对应的字段
 		byName := value.FieldByName(name)
+		if byName == (reflect.Value{}) {
+			// 没有找到对应的
+			panic("The type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
+		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
 		field := byName.Interface()
 		switch field.(type) {
