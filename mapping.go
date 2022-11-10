@@ -38,7 +38,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 				resultType = result[0]
 			}
 			value = resultMapping(query, resultType.Interface())
-			SelectResultMapper(value, result)
+			QueryResultMapper(value, result)
 		case Insert, Update, Delete:
 			exec, err = build.DB.Exec(statements)
 			if err != nil {
@@ -285,23 +285,27 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	return true, nil
 }
 
-func SelectResultMapper(value reflect.Value, result []reflect.Value) {
+func QueryResultMapper(value reflect.Value, result []reflect.Value) {
+	length := len(result)
 	out0 := result[0]
-	if result[0].Kind() != reflect.Slice {
-		v0 := value.Index(0)
-		if v0.Type().AssignableTo(out0.Type()) {
-			out0.Set(v0)
-		}
-	} else {
+	for i := 0; i < length-1; i++ {
 		if value.Type().AssignableTo(out0.Type()) {
 			out0.Set(value)
+			break
+		}
+		if out0.Kind() != reflect.Slice {
+			v0 := value.Index(0)
+			if v0.Type().AssignableTo(out0.Type()) {
+				out0.Set(v0)
+				break
+			}
 		}
 	}
 }
 
 func ExecResultMapper(result []reflect.Value, exec sql.Result) error {
 	length := len(result)
-	for i := 0; i < length; i++ {
+	for i := 0; i < length-1; i++ {
 		if i == 0 {
 			affected, err := exec.RowsAffected()
 			if err != nil {
@@ -315,6 +319,9 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) error {
 				return err
 			}
 			result[i].Set(reflect.ValueOf(affected))
+		}
+		if i > 1 {
+			break
 		}
 	}
 	return nil
