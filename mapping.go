@@ -37,7 +37,10 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 			} else {
 				resultType = result[0]
 			}
-			value = resultMapping(query, resultType.Interface())
+			value, err = resultMapping(query, resultType.Interface())
+			if err != nil {
+				goto end
+			}
 			QueryResultMapper(value, result)
 		case Insert, Update, Delete:
 			exec, err = build.DB.Exec(statements)
@@ -77,16 +80,19 @@ func (build *Build) initMapper(id []string, fun reflect.Value) {
 	fun.Set(f)
 }
 
-func resultMapping(row *sql.Rows, resultType any) reflect.Value {
+func resultMapping(row *sql.Rows, resultType any) (reflect.Value, error) {
+	var err error
+	var columns []string
+	var flag bool
 	of := reflect.ValueOf(row)
 	// 确定数据库 列顺序 排列扫描顺序
-	columns, err := row.Columns()
+	columns, err = row.Columns()
 	if err != nil {
 		panic(err.Error())
 	}
 	// 校验 resultType 是否覆盖了结果集
-	if b, err := SelectCheck(columns, resultType); !b {
-		panic(err)
+	if flag, err = SelectCheck(columns, resultType); !flag {
+		return reflect.Value{}, err
 	}
 	// 解析结构体 映射字段
 	// 拿到 scan 方法
@@ -119,7 +125,7 @@ func resultMapping(row *sql.Rows, resultType any) reflect.Value {
 		// 添加结果集
 		result = reflect.Append(result, value)
 	}
-	return result
+	return result, nil
 }
 
 // 构建结构体接收器
