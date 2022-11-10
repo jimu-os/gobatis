@@ -1,4 +1,5 @@
 # sgo
+[![Go Report Card](https://goreportcard.com/badge/gitee.com/aurora-engine/sgo)](https://goreportcard.com/report/gitee.com/aurora-engine/sgo)
 `sgo` 是参考 `mybatis` 编写的sql标签解析，`sgo`仅提供对 sql 的上下文数据解析填充，并不保证对 sql 语句的语法检查。
 ## XML 解析规则
 `sgo` 解析 xml 文件中的sql语句，会严格检查上下文中的数据类型，字符串类型参数会自定添加 ` '' ` 单引号，其他基础数据类型不会添加，对于复杂数据结构(复合结构，泛型结构体等)会持续跟进
