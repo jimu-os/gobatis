@@ -15,6 +15,6 @@
 <!ATTLIST for item CDATA #REQUIRED>
 <!ATTLIST for open CDATA #REQUIRED>
 <!ATTLIST for close CDATA #REQUIRED>
-<!ATTLIST for column CDATA #REQUIRED>
+<!ATTLIST for column CDATA >
 <!ATTLIST for separator CDATA #REQUIRED>
 <!ATTLIST if expr #PCDATA #REQUIRED>

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "https://gitee.com/aurora-engine/sgo/blob/master/sgo.dtd">
+<!DOCTYPE mapper SYSTEM "http://sgo.com">
 
 <mapper namespace="UserMapper">
-    <select id="find">
+    <select id="Find">
         select * from student where sss={name}
         <if expr="{arr}!=nil and {len(arr)}>0">
             and
-            <for slice="{arr}" item="obj" column="id" open="("  separator="," close=")" >
+            <for slice="{arr}" item="obj" open="("  separator="," close=")" >
                 {obj}
             </for>
         </if>

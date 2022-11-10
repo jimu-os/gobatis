@@ -20,8 +20,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 		var flag bool
 		statements, tag, err := build.Get(id, values[0].Interface())
 		if err != nil {
-			result[1].Set(reflect.ValueOf(err))
-			return result
+			goto end
 		}
 		if flag, err = MapperCheck(fun); !flag {
 			goto end
@@ -50,7 +49,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 			err = ExecResultMapper(result, exec)
 		}
 	end:
-		if len(result) > 1 && err != nil {
+		if (len(result) > 1 || len(result) == 1) && err != nil {
 			errType = reflect.ValueOf(err)
 			outEnd := result[len(result)-1]
 			if errType.Type().AssignableTo(outEnd.Type()) {

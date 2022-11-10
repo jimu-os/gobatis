@@ -22,13 +22,16 @@ type UserModel struct {
 
 // UserMapper s
 type UserMapper struct {
+	Find       func(any) error
 	FindUser   func(ctx any) (UserModel, error)
 	UserSelect func(ctx any) (map[string]any, error)
 }
 
 func main() {
 	ctx := map[string]any{
-		"id": "3de784d9a29243cdbe77334135b8a282",
+		"id":   "3de784d9a29243cdbe77334135b8a282",
+		"name": "test",
+		"arr":  []int{1, 2, 3, 4, 5},
 	}
 	open, err := sql.Open("mysql", "xx:xx@2022@x(xx.xx.xx.117:3306)/community")
 	if err != nil {
@@ -39,9 +42,14 @@ func main() {
 	build.Source("/")
 	mapper := &UserMapper{}
 	build.ScanMappers(mapper)
-	user, err := mapper.FindUser(ctx)
+	//user, err := mapper.FindUser(ctx)
+	//if err != nil {
+	//	return
+	//}
+	//fmt.Println(user)
+	err = mapper.Find(ctx)
 	if err != nil {
+		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(user)
 }

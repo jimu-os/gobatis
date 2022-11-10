@@ -29,27 +29,23 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	var slice, item, open, closes, separator, column string
 	var attr *etree.Attr
 	buf := bytes.Buffer{}
-
-	attr = element.SelectAttr("column")
-	if attr == nil {
-		return "", fmt.Errorf("%s column is not found", element.Tag)
+	if attr = element.SelectAttr("column"); attr != nil {
+		column = attr.Value
 	}
-	column = attr.Value
 	if column != "" {
 		buf.WriteString(column + " IN ")
 	}
 
-	attr = element.SelectAttr("slice")
-	if attr == nil {
+	if attr = element.SelectAttr("slice"); attr == nil {
 		return "", fmt.Errorf("%s slice is not found", element.Tag)
 	}
+
 	slice = attr.Value
 	if slice == "" {
 		return "", fmt.Errorf("%s 'slice' Attr not empty", element.Tag)
 	}
 
-	attr = element.SelectAttr("item")
-	if attr == nil {
+	if attr = element.SelectAttr("item"); attr == nil {
 		return "", fmt.Errorf("%s item is not found", element.Tag)
 	}
 	item = attr.Value
@@ -57,8 +53,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		return "", fmt.Errorf("%s 'item' Attr not empty", element.Tag)
 	}
 
-	attr = element.SelectAttr("open")
-	if attr == nil {
+	if attr = element.SelectAttr("open"); attr == nil {
 		return "", fmt.Errorf("%s open is not found", element.Tag)
 	}
 	open = attr.Value
@@ -66,8 +61,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		open = "("
 	}
 
-	attr = element.SelectAttr("close")
-	if attr == nil {
+	if attr = element.SelectAttr("close"); attr == nil {
 		return "", fmt.Errorf("%s close is not found", element.Tag)
 	}
 	closes = attr.Value
@@ -92,17 +86,10 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		return "", err
 	}
 	valueOf := reflect.ValueOf(v)
-	// template 预处理
-	unTemplate := UnTemplate(template)
-	split := strings.Split(unTemplate[1], ".")
-	length := len(split)
-	if length > 1 && valueOf.Type().Elem().Kind() != reflect.Map {
-		return "", fmt.Errorf("")
-	}
 	buf.WriteString(open)
 	var result string
 	// 解析 slice 属性迭代
-	combine := Combine{Value: v, Ctx: ctx, Keys: split}
+	combine := Combine{Value: v, Template: template}
 	switch valueOf.Kind() {
 	case reflect.Slice, reflect.Array:
 		combine.Politic = Slice{}
@@ -110,8 +97,6 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		combine.Politic = Struct{}
 	case reflect.Pointer:
 		combine.Politic = Pointer{}
-	default:
-		return "", fmt.Errorf("%s is not list", unTemplate)
 	}
 	result, err = combine.ForEach()
 	if err != nil {

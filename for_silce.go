@@ -3,7 +3,6 @@ package sgo
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -13,51 +12,31 @@ type Slice struct {
 	*/
 }
 
-func (s Slice) ForEach(value any, ctx map[string]any, keys []string) (string, error) {
+func (s Slice) ForEach(value any, template string) (string, error) {
+	var v any
+	var err error
+	var item string
 	items := make([]string, 0)
-	length := len(keys)
 	valueOf := reflect.ValueOf(value)
 	for i := 0; i < valueOf.Len(); i++ {
 		IndexV := valueOf.Index(i)
-		if length == 1 {
-			if IndexV.Kind() == reflect.Slice || IndexV.Kind() == reflect.Map {
-				return "", fmt.Errorf("'slice' element error")
-			}
-			a := IndexV.Interface()
-			switch a.(type) {
-			case int:
-				vi := a.(int)
-				itoa := strconv.Itoa(vi)
-				items = append(items, itoa)
-			case string:
-				items = append(items, a.(string))
-			case float64:
-				float := strconv.FormatFloat(a.(float64), 'f', 'x', 64)
-				items = append(items, float)
-			default:
-				return "", fmt.Errorf("")
-			}
-		} else {
-			if IndexV.Kind() != reflect.Map {
-				return "", fmt.Errorf("'slice' element error")
-			}
-			tctx := IndexV.Interface().(map[string]any)
-			cv, err := ctxValue(tctx, keys[1:])
+		v = IndexV.Interface()
+		item = ""
+		if IndexV.Kind() == reflect.Slice {
+			return "", fmt.Errorf("'slice' element error")
+		}
+		if IndexV.Kind() == reflect.Map {
+			ctx := v.(map[string]any)
+			item, err = AnalysisForTemplate(template, ctx, nil)
 			if err != nil {
 				return "", err
 			}
-			switch cv.(type) {
-			case int:
-				vi := cv.(int)
-				itoa := strconv.Itoa(vi)
-				items = append(items, itoa)
-			case string:
-				items = append(items, cv.(string))
-			case float64:
-				float := strconv.FormatFloat(cv.(float64), 'f', 'x', 64)
-				items = append(items, float)
-			}
 		}
+		item, err = AnalysisForTemplate(template, nil, v)
+		if err != nil {
+			return "", err
+		}
+		items = append(items, item)
 	}
 	join := strings.Join(items, ",")
 	return join, nil
