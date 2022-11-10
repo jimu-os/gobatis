@@ -2,7 +2,7 @@ package sgo
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	"github.com/druidcaesa/ztool"
 	"reflect"
 	"time"
@@ -11,17 +11,30 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
+func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-		fmt.Printf("%s %s \n", result[0].Type().String(), result[1].Type().String())
 		err := result[1].Interface()
 		//value := result[0]
-		get, err := build.Get(id, values[0].Interface())
+		get, tag, err := build.Get(id, values[0].Interface())
 		if err != nil {
 			result[1].Set(reflect.ValueOf(err))
 			return result
 		}
-		fmt.Println(get)
+		if b, err := MapperCheck(fun, tag); !b {
+			panic(err)
+		}
+
+		query, err := build.DB.Query(get)
+		if err != nil {
+			return nil
+		}
+		value := resultMapping(query, result[0].Interface())
+		if result[0].Kind() != reflect.Slice {
+			out := result[0]
+			if out.CanSet() {
+				out.Set(value.Index(0))
+			}
+		}
 		return result
 	}
 }
@@ -29,16 +42,23 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 func (build *Build) initMapper(id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	values := make([]reflect.Value, 0)
+	var outValue reflect.Value
 	for i := 0; i < numOut; i++ {
 		out := fun.Type().Out(i)
-		elem := reflect.New(out).Elem()
-		values = append(values, elem)
+		outValue = reflect.New(out).Elem()
+		if out.Kind() == reflect.Pointer {
+			elem := reflect.New(out.Elem())
+			if outValue.CanSet() {
+				outValue.Set(elem)
+			}
+		}
+		values = append(values, outValue)
 	}
-	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
+	f := reflect.MakeFunc(fun.Type(), build.mapper(id, fun, values))
 	fun.Set(f)
 }
 
-func resultMapping(row *sql.Rows, resultType any) []any {
+func resultMapping(row *sql.Rows, resultType any) reflect.Value {
 	of := reflect.ValueOf(row)
 	// 确定数据库 列顺序 排列扫描顺序
 	columns, err := row.Columns()
@@ -46,12 +66,16 @@ func resultMapping(row *sql.Rows, resultType any) []any {
 		panic(err.Error())
 	}
 	// 校验 resultType 是否覆盖了结果集
+	if b, err := SelectCheck(columns, resultType); !b {
+		panic(err)
+	}
 	// 解析结构体 映射字段
 	// 拿到 scan 方法
 	scan := of.MethodByName("Scan")
 	next := of.MethodByName("Next")
 	t := reflect.SliceOf(reflect.TypeOf(resultType))
 	result := reflect.MakeSlice(t, 0, 0)
+	mapping := ResultMapping(resultType)
 	for (next.Call(nil))[0].Interface().(bool) {
 		var value, unValue reflect.Value
 		if reflect.TypeOf(resultType).Kind() == reflect.Pointer {
@@ -63,7 +87,6 @@ func resultMapping(row *sql.Rows, resultType any) []any {
 			value = value.Elem()
 			unValue = value
 		}
-		mapping := structMapping(resultType)
 		// 创建 接收器
 		values, fieldIndexMap := buildScan(unValue, columns, mapping)
 		// 执行扫描, 执行结果扫描，不处理error 扫码结果类型不匹配，默认为零值
@@ -73,7 +96,7 @@ func resultMapping(row *sql.Rows, resultType any) []any {
 		// 添加结果集
 		result = reflect.Append(result, value)
 	}
-	return result.Interface().([]any)
+	return result
 }
 
 // 构建结构体接收器
@@ -145,24 +168,66 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 	}
 }
 
-// 生成结构体 映射匹配
-func structMapping(s any) map[string]string {
+// ResultMapping
+// 解析结构体上的column标签 生成数据库字段到结构体字段的映射匹配
+// value 如果传递的是结构体，则会解析对应的 column 标签 或者字段本身
+// value 如果是 map 则不会做任何处理，返回 nil
+func ResultMapping(value any) map[string]string {
 	mapp := make(map[string]string)
-	of := reflect.TypeOf(s)
+	of := reflect.TypeOf(value)
 	if of.Kind() == reflect.Pointer {
-		tf := reflect.ValueOf(s).Elem()
-		return structMapping(tf.Interface())
+		tf := reflect.ValueOf(value).Elem()
+		return ResultMapping(tf.Interface())
 	}
-	for i := 0; i < of.NumField(); i++ {
-		field := of.Field(i)
-		mapp[field.Name] = field.Name
-		if get := field.Tag.Get("column"); get != "" {
-			mapp[get] = field.Name
+	switch of.Kind() {
+	case reflect.Struct:
+		for i := 0; i < of.NumField(); i++ {
+			field := of.Field(i)
+			mapp[field.Name] = field.Name
+			if get := field.Tag.Get("column"); get != "" {
+				mapp[get] = field.Name
+			}
 		}
+	case reflect.Map:
+		return nil
 	}
 	return mapp
 }
 
-func ormCheck() {
+func SelectCheck(columns []string, resultType any) (bool, error) {
+	rf := reflect.ValueOf(resultType)
+	if rf.Kind() == reflect.Pointer {
+		return SelectCheck(columns, rf.Elem())
+	}
+	if len(columns) > 1 {
+		if rf.Kind() != reflect.Struct && rf.Kind() != reflect.Map {
+			return false, errors.New("")
+		}
+	}
+	return true, nil
+}
 
+// MapperCheck 检查 不同类别的sql标签 Mapper 函数是否符合规范
+func MapperCheck(fun reflect.Value, tag string) (bool, error) {
+	switch tag {
+	case Select:
+		//TODO
+	case Insert:
+		//TODO
+	case Update:
+		//TODO
+	case Delete:
+		//TODO
+	}
+	if fun.Type().NumIn() != 1 {
+		return false, errors.New("there can only be one argument")
+	}
+	if fun.Type().NumOut() != 2 {
+		return false, errors.New("there can only be two return values")
+	}
+	out := fun.Type().Out(1)
+	if !out.Implements(reflect.TypeOf(new(error)).Elem()) {
+		return false, errors.New("the second return value must be error")
+	}
+	return true, nil
 }

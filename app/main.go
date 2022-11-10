@@ -1,7 +1,10 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"gitee.com/aurora-engine/sgo"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // UserModel 用户模型
@@ -19,7 +22,7 @@ type UserModel struct {
 
 // easy
 type UserMapper struct {
-	FindUser   func(ctx any) (UserModel, error)
+	FindUser   func(ctx any) (*UserModel, error)
 	UserSelect func(ctx any) (map[string]any, error)
 }
 
@@ -27,10 +30,19 @@ func main() {
 	ctx := map[string]any{
 		"id": "3de784d9a29243cdbe77334135b8a282",
 	}
-	build := sgo.New()
+	open, err := sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	build := sgo.New(open)
 	build.LoadMapper("/")
 	mapper := &UserMapper{}
 	build.ScanMappers(mapper)
-	mapper.FindUser(ctx)
-	mapper.UserSelect(ctx)
+	user, err := mapper.FindUser(ctx)
+	if err != nil {
+		return
+	}
+	fmt.Println(user)
+	//mapper.UserSelect(ctx)
 }

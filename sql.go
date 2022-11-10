@@ -2,6 +2,16 @@ package sgo
 
 import "github.com/beevik/etree"
 
+const (
+	Select = "select"
+	Insert = "insert"
+	Update = "update"
+	Delete = "delete"
+	Mapper = "mapper"
+	For    = "for"
+	If     = "if"
+)
+
 // Sql 单个xml的解析结构
 type Sql struct {
 	Element   *etree.Element

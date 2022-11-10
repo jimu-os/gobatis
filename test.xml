@@ -25,11 +25,11 @@
     </select>
 
     <select id="FindUser">
-        select * from comm_user where user_id1={id}
+        select * from comm_user where user_id={id}
     </select>
 
     <select id="UserSelect">
-        select * from comm_user where user_id2={id}
+        select * from comm_user where user_id={id}
     </select>
 
 </mapper>
