@@ -30,7 +30,7 @@ func main() {
 	ctx := map[string]any{
 		"id": "3de784d9a29243cdbe77334135b8a282",
 	}
-	open, err := sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community")
+	open, err := sql.Open("mysql", "xx:xx@2022@x(xx.xx.xx.117:3306)/community")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
