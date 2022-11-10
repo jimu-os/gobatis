@@ -53,6 +53,7 @@ func (build *Build) LoadMapper(source string) {
 	})
 }
 
+// ScanMappers 扫描解析
 func (build *Build) ScanMappers(mappers ...any) {
 	for i := 0; i < len(mappers); i++ {
 		mapper := mappers[i]
@@ -71,7 +72,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 			key = append(key, namespace)
 			structField := vf.Type().Field(i)
 			field := vf.Field(j)
-			if !structField.IsExported() {
+			if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
 				continue
 			}
 			key = append(key, structField.Name)

@@ -25,7 +25,7 @@
     </select>
 
     <select id="FindUser">
-        select * from comm_user where user_id={id}
+        select user_id from comm_user where user_id={id}
     </select>
 
     <select id="UserSelect">
