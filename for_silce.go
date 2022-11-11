@@ -21,7 +21,6 @@ func (s Slice) ForEach(value any, template string, separator string) (string, er
 	for i := 0; i < valueOf.Len(); i++ {
 		IndexV := valueOf.Index(i)
 		v = IndexV.Interface()
-		item = ""
 		if IndexV.Kind() == reflect.Slice {
 			return "", fmt.Errorf("'slice' element error")
 		}
@@ -31,6 +30,8 @@ func (s Slice) ForEach(value any, template string, separator string) (string, er
 			if err != nil {
 				return "", err
 			}
+			items = append(items, item)
+			continue
 		}
 		item, err = AnalysisForTemplate(template, nil, v)
 		if err != nil {
