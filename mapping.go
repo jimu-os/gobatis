@@ -180,6 +180,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 }
 
 // 对 buildScan 函数构建阶段存在特殊字段的处理 进行回写到指定的结构体位置
+// values 数据结果集 一行记录
 func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 	// 迭代是否有特殊结构体 主要对 时间类型做了处理
 	for k, v := range fieldIndexMap {
