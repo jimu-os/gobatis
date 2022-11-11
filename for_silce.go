@@ -12,7 +12,7 @@ type Slice struct {
 	*/
 }
 
-func (s Slice) ForEach(value any, template string) (string, error) {
+func (s Slice) ForEach(value any, template string, separator string) (string, error) {
 	var v any
 	var err error
 	var item string
@@ -38,6 +38,6 @@ func (s Slice) ForEach(value any, template string) (string, error) {
 		}
 		items = append(items, item)
 	}
-	join := strings.Join(items, ",")
+	join := strings.Join(items, separator)
 	return join, nil
 }

@@ -26,58 +26,29 @@ func IfElement(element *etree.Element, template string, ctx map[string]any) (str
 }
 
 func forElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	var slice, item, open, closes, separator, column string
+	var slice, open, closes, column string
+	separator := ","
 	var attr *etree.Attr
 	buf := bytes.Buffer{}
 	if attr = element.SelectAttr("column"); attr != nil {
 		column = attr.Value
 	}
+	if attr = element.SelectAttr("slice"); attr != nil {
+		slice = attr.Value
+	}
+	if attr = element.SelectAttr("open"); attr != nil {
+		open = attr.Value
+	}
+	if attr = element.SelectAttr("close"); attr != nil {
+		closes = attr.Value
+	}
+	attr = element.SelectAttr("separator")
+	if element.SelectAttr("separator"); attr != nil {
+		separator = attr.Value
+	}
 	if column != "" {
 		buf.WriteString(column + " IN ")
 	}
-
-	if attr = element.SelectAttr("slice"); attr == nil {
-		return "", fmt.Errorf("%s slice is not found", element.Tag)
-	}
-
-	slice = attr.Value
-	if slice == "" {
-		return "", fmt.Errorf("%s 'slice' Attr not empty", element.Tag)
-	}
-
-	if attr = element.SelectAttr("item"); attr == nil {
-		return "", fmt.Errorf("%s item is not found", element.Tag)
-	}
-	item = attr.Value
-	if item == "" {
-		return "", fmt.Errorf("%s 'item' Attr not empty", element.Tag)
-	}
-
-	if attr = element.SelectAttr("open"); attr == nil {
-		return "", fmt.Errorf("%s open is not found", element.Tag)
-	}
-	open = attr.Value
-	if open == "" {
-		open = "("
-	}
-
-	if attr = element.SelectAttr("close"); attr == nil {
-		return "", fmt.Errorf("%s close is not found", element.Tag)
-	}
-	closes = attr.Value
-	if closes == "" {
-		closes = ")"
-	}
-
-	attr = element.SelectAttr("separator")
-	if attr == nil {
-		return "", fmt.Errorf("%s separator is not found", element.Tag)
-	}
-	separator = attr.Value
-	if separator == "" {
-		separator = ","
-	}
-
 	// 上下文中取出 数据
 	t := UnTemplate(slice)
 	keys := strings.Split(t[1], ".")
@@ -89,7 +60,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	buf.WriteString(open)
 	var result string
 	// 解析 slice 属性迭代
-	combine := Combine{Value: v, Template: template}
+	combine := Combine{Value: v, Template: template, Separator: separator}
 	switch valueOf.Kind() {
 	case reflect.Slice, reflect.Array:
 		combine.Politic = Slice{}
@@ -104,7 +75,6 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	}
 	buf.WriteString(result)
 	buf.WriteString(closes)
-
 	return buf.String(), nil
 }
 
@@ -152,58 +122,64 @@ func toMap(value any) map[string]any {
 		return toMap(valueOf.Interface())
 	}
 	ctx := make(map[string]any)
-	var key string
-	var v any
 	switch valueOf.Kind() {
 	case reflect.Struct:
-		for i := 0; i < valueOf.NumField(); i++ {
-			field := valueOf.Field(i)
-			if !valueOf.Type().Field(i).IsExported() {
-				continue
-			}
-			key = valueOf.Type().Field(i).Name
-			key = strings.ToLower(key)
-			v = field.Interface()
-			if dataType(key, v, ctx) {
-				continue
-			}
-			if field.Kind() == reflect.Slice {
-				v = filedToMap(v)
-			}
-			if field.Kind() == reflect.Struct || field.Kind() == reflect.Pointer || field.Kind() == reflect.Map {
-				v = toMap(v)
-			}
-			ctx[key] = v
-		}
+		structToMap(valueOf, ctx)
 	case reflect.Map:
-		mapIter := valueOf.MapRange()
-		for mapIter.Next() {
-			key = mapIter.Key().Interface().(string)
-			vOf := mapIter.Value()
-			v = vOf.Interface()
-			if vOf.Kind() == reflect.Interface {
-				if vOf.Elem().Kind() == reflect.Slice {
-					if vOf.Elem().Type().Elem().Kind() == reflect.Struct || vOf.Elem().Type().Elem().Kind() == reflect.Pointer || vOf.Elem().Type().Elem().Kind() == reflect.Map {
-						v = filedToMap(v)
-					}
-				}
-				if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
-					v = toMap(v)
-				}
-			}
-			if dataType(key, v, ctx) {
-				continue
-			}
-			if vOf.Kind() == reflect.Slice {
-				v = filedToMap(v)
-			}
-			if vOf.Kind() == reflect.Struct || vOf.Kind() == reflect.Map || vOf.Kind() == reflect.Pointer {
-				v = toMap(v)
-			}
-			ctx[key] = v
-		}
+		mapToMap(valueOf, ctx)
 	}
 	return ctx
+}
+
+func structToMap(value reflect.Value, ctx map[string]any) {
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		if !value.Type().Field(i).IsExported() {
+			continue
+		}
+		key := value.Type().Field(i).Name
+		key = strings.ToLower(key)
+		v := field.Interface()
+		if dataType(key, v, ctx) {
+			continue
+		}
+		if field.Kind() == reflect.Slice {
+			v = filedToMap(v)
+		}
+		if field.Kind() == reflect.Struct || field.Kind() == reflect.Pointer || field.Kind() == reflect.Map {
+			v = toMap(v)
+		}
+		ctx[key] = v
+	}
+}
+
+func mapToMap(value reflect.Value, ctx map[string]any) {
+	mapIter := value.MapRange()
+	for mapIter.Next() {
+		key := mapIter.Key().Interface().(string)
+		vOf := mapIter.Value()
+		v := vOf.Interface()
+		if vOf.Kind() == reflect.Interface {
+			if vOf.Elem().Kind() == reflect.Slice {
+				if vOf.Elem().Type().Elem().Kind() == reflect.Struct || vOf.Elem().Type().Elem().Kind() == reflect.Pointer || vOf.Elem().Type().Elem().Kind() == reflect.Map {
+					v = filedToMap(v)
+				}
+			}
+			if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
+				v = toMap(v)
+			}
+		}
+		if dataType(key, v, ctx) {
+			continue
+		}
+		if vOf.Kind() == reflect.Slice {
+			v = filedToMap(v)
+		}
+		if vOf.Kind() == reflect.Struct || vOf.Kind() == reflect.Map || vOf.Kind() == reflect.Pointer {
+			v = toMap(v)
+		}
+		ctx[key] = v
+	}
 }
 
 func filedToMap(value any) []map[string]any {
@@ -243,13 +219,13 @@ func filedToMap(value any) []map[string]any {
 
 // 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理，如果是复杂数据类型，应该直接添加到ctx，并返回true
 func dataType(key string, value any, ctx map[string]any) bool {
-
+	// TODO
 	return false
 }
 
 // 模板解析处理复杂数据类型
 func dataHandle(value any) string {
-
+	// TODO
 	return ""
 }
 

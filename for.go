@@ -8,17 +8,18 @@ import (
 
 type Politic interface {
 	// ForEach value 待处理迭代的数据 ctx 上下文数据 item 上下文数据key序列
-	ForEach(value any, template string) (string, error)
+	ForEach(value any, template string, separator string) (string, error)
 }
 
 type Combine struct {
-	Value    any
-	Template string
+	Value     any
+	Template  string
+	Separator string
 	Politic
 }
 
 func (c Combine) ForEach() (string, error) {
-	return c.Politic.ForEach(c.Value, c.Template)
+	return c.Politic.ForEach(c.Value, c.Template, c.Separator)
 }
 
 // AnalysisForTemplate 解析 for 标签的 文本模板
