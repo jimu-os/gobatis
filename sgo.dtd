@@ -13,8 +13,8 @@
 <!ATTLIST delete id CDATA #REQUIRED>
 <!ATTLIST for slice CDATA #REQUIRED>
 <!ATTLIST for item CDATA #REQUIRED>
-<!ATTLIST for open CDATA #REQUIRED>
-<!ATTLIST for close CDATA #REQUIRED>
+<!ATTLIST for open CDATA >
+<!ATTLIST for close CDATA >
 <!ATTLIST for column CDATA >
-<!ATTLIST for separator CDATA #REQUIRED>
+<!ATTLIST for separator CDATA>
 <!ATTLIST if expr #PCDATA #REQUIRED>
