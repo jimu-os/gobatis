@@ -33,7 +33,7 @@ func main() {
 		"name": "test",
 		"arr":  []int{1, 2, 3, 4, 5},
 	}
-	open, err := sql.Open("mysql", "xx:xx@2022@x(xx.157.xx.117:xx)/community")
+	open, err := sql.Open("mysql", "xx:xx@2xx022@x(82.157.xx.xx:3306)/community")
 	if err != nil {
 		fmt.Println(err.Error())
 		return

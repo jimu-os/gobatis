@@ -17,13 +17,10 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 		var value, resultType, errType reflect.Value
 		var query *sql.Rows
 		var exec sql.Result
-		var flag bool
 		star := time.Now()
-		statements, tag, err := build.Get(id, values[0].Interface())
+		ctx := values[0].Interface()
+		statements, tag, err := build.Get(id, ctx)
 		if err != nil {
-			goto end
-		}
-		if flag, err = MapperCheck(fun); !flag {
 			goto end
 		}
 		switch tag {
@@ -58,8 +55,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 			}
 		}
 		end := time.Now()
-		Info("SQL => " + statements)
-		Info("time => " + end.Sub(star).String())
+		Info("SQL Statements ==>", statements, ",Context Parameter:", ctx, "Time:", end.Sub(star).String())
 		return result
 	}
 }
@@ -261,38 +257,6 @@ func SelectCheck(columns []string, resultType any) (bool, error) {
 	if len(columns) > 1 {
 		if rf.Kind() != reflect.Struct && rf.Kind() != reflect.Map {
 			return false, errors.New("the return type is incorrect and requires either a structure type or a map to receive")
-		}
-	}
-	return true, nil
-}
-
-// MapperCheck 检查 不同类别的sql标签 Mapper 函数是否符合规范
-// 规则: 入参只能有一个并且只能是 map 或者 结构体，对返回值最后一个参数必须是error
-func MapperCheck(fun reflect.Value) (bool, error) {
-	// 只能有一个入参
-	if fun.Type().NumIn() != 1 {
-		return false, errors.New("there can only be one argument")
-	}
-
-	// 至少有一个返回值
-	if fun.Type().NumOut() < 1 {
-		return false, errors.New("at least one return value is required")
-	}
-
-	// 只有一个参数接收时候，只能是 结果集对应类型
-	if fun.Type().NumOut() == 1 {
-		err := fun.Type().Out(0)
-		if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
-			return false, errors.New("the second return value must be error")
-		}
-	}
-
-	// 多个参数接收时候，最后一个返回值只能是 error
-	if fun.Type().NumOut() > 2 {
-		// 校验最后一个参数必须是 error
-		err := fun.Type().Out(fun.Type().NumOut() - 1)
-		if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
-			return false, errors.New("the second return value must be error")
 		}
 	}
 	return true, nil

@@ -38,6 +38,14 @@ func Debug(msg ...any) {
 	logs.Debugln(msg...)
 }
 
+func Error(err ...any) {
+	logs.Errorln(err...)
+}
+
+func Panic(v ...any) {
+	logs.Panicln(v...)
+}
+
 func (format *Formatter) Format(entry *logrus.Entry) ([]byte, error) {
 	buf := format.Buf.Get().(*bytes.Buffer)
 	defer format.Buf.Put(buf)
