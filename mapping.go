@@ -18,6 +18,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 		var query *sql.Rows
 		var exec sql.Result
 		var flag bool
+		star := time.Now()
 		statements, tag, err := build.Get(id, values[0].Interface())
 		if err != nil {
 			goto end
@@ -56,6 +57,9 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 				outEnd.Set(errType)
 			}
 		}
+		end := time.Now()
+		Info("SQL => " + statements)
+		Info("time => " + end.Sub(star).String())
 		return result
 	}
 }

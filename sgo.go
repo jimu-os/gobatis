@@ -13,6 +13,9 @@ import (
 )
 
 func New(db *sql.DB) *Build {
+	if db == nil {
+		panic("db nil")
+	}
 	return &Build{
 		DB:         db,
 		NameSpaces: map[string]*Sql{},
@@ -20,7 +23,8 @@ func New(db *sql.DB) *Build {
 }
 
 type Build struct {
-	DB        *sql.DB
+	DB *sql.DB
+
 	SqlSource string
 	// 保存所有的 xml 解析
 	NameSpaces map[string]*Sql
@@ -48,6 +52,7 @@ func (build *Build) Source(source string) {
 			s := NewSql(element)
 			s.LoadSqlElement()
 			build.NameSpaces[attr.Value] = s
+			Info("load mapper file path:[" + path + "]")
 		}
 		return nil
 	})
@@ -70,7 +75,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 		for j := 0; j < vf.NumField(); j++ {
 			key := make([]string, 0)
 			key = append(key, namespace)
-			structField := vf.Type().Field(i)
+			structField := vf.Type().Field(j)
 			field := vf.Field(j)
 			if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
 				continue

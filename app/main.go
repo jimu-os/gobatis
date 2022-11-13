@@ -33,7 +33,7 @@ func main() {
 		"name": "test",
 		"arr":  []int{1, 2, 3, 4, 5},
 	}
-	open, err := sql.Open("mysql", "xx:xx@2022@x(xx.xx.xx.117:3306)/community")
+	open, err := sql.Open("mysql", "xx:xx@2022@x(xx.157.xx.117:xx)/community")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -42,14 +42,9 @@ func main() {
 	build.Source("/")
 	mapper := &UserMapper{}
 	build.ScanMappers(mapper)
-	//user, err := mapper.FindUser(ctx)
-	//if err != nil {
-	//	return
-	//}
-	//fmt.Println(user)
-	err = mapper.Find(ctx)
+	user, err := mapper.FindUser(ctx)
 	if err != nil {
-		fmt.Println(err.Error())
 		return
 	}
+	fmt.Println(user)
 }
