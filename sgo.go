@@ -103,82 +103,94 @@ func (build *Build) ScanMappers(mappers ...any) {
 	}
 }
 
-func (build *Build) Sql(id string, value any) (string, error) {
+func (build *Build) Sql(id string, value any) (string, string, []any, error) {
 	ids := strings.Split(id, ".")
 	if len(ids) != 2 {
-		return "", errors.New("id error")
+		return "", "", nil, errors.New("id error")
 	}
 	ctx := toMap(value)
 	if sql, b := build.NameSpaces[ids[0]]; b {
 		if element, f := sql.Statement[ids[1]]; f {
-			analysis, _, err := Analysis(element, ctx)
+			analysis, _, tempSql, params, err := Analysis(element, ctx)
 			if err != nil {
-				return "", err
+				return "", "", nil, err
 			}
 			join := strings.Join(analysis, " ")
-			return join, nil
+			temp := strings.Join(tempSql, " ")
+			return join, temp, params, nil
 		}
 	}
-	return "", nil
+	return "", "", nil, nil
 }
 
-func (build *Build) Get(id []string, value any) (string, string, error) {
+func (build *Build) Get(id []string, value any) (string, string, string, []any, error) {
 	if len(id) != 2 {
-		return "", "", errors.New("id error")
+		return "", "", "", nil, errors.New("id error")
 	}
 	ctx := toMap(value)
 	if sql, b := build.NameSpaces[id[0]]; b {
 		if element, f := sql.Statement[id[1]]; f {
-			analysis, tag, err := Analysis(element, ctx)
+			analysis, tag, tempSql, params, err := Analysis(element, ctx)
 			if err != nil {
-				return "", "", err
+				return "", "", "", nil, err
 			}
 			join := strings.Join(analysis, " ")
-			return join, tag, nil
+			temp := strings.Join(tempSql, " ")
+			return join, tag, temp, params, nil
 		}
 	}
-	return "", "", fmt.Errorf("not found sql statement element")
+	return "", "", "", nil, fmt.Errorf("not found sql statement element")
 }
 
 // Analysis 解析xml标签
-func Analysis(element *etree.Element, ctx map[string]any) ([]string, string, error) {
+func Analysis(element *etree.Element, ctx map[string]any) ([]string, string, []string, []any, error) {
 	var err error
-	sql := []string{}
+	var t string
+	var params []any
+	args := make([]any, 0)
+	SQL := make([]string, 0)
+	template := make([]string, 0)
 	// 解析根标签 开始之后的文本
 	sqlStar := element.Text()
 	// 处理字符串前后空格
 	sqlStar = strings.TrimSpace(sqlStar)
 	//更具标签类型，对应解析字符串
-	sqlStar, err = Element(element, sqlStar, ctx)
+	sqlStar, t, params, err = Element(element, sqlStar, ctx)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, nil, err
 	}
-	sql = append(sql, sqlStar)
+	SQL = append(SQL, sqlStar)
+	template = append(template, t)
+	args = append(args, params...)
 	// if 标签解析 逻辑不通过
 	if sqlStar != "" && err == nil {
 		// 解析子标签内容
 		child := element.ChildElements()
 		for _, childElement := range child {
-			analysis, _, err := Analysis(childElement, ctx)
+			analysis, _, tempSql, params, err := Analysis(childElement, ctx)
 			if err != nil {
-				return nil, "", fmt.Errorf("%s -> %s error,%s", element.Tag, childElement.Tag, err.Error())
+				return nil, "", tempSql, params, fmt.Errorf("%s -> %s error,%s", element.Tag, childElement.Tag, err.Error())
 			}
-			sql = append(sql, analysis...)
+			SQL = append(SQL, analysis...)
+			template = append(template, tempSql...)
+			args = append(args, params...)
 		}
 	}
 	endSql := element.Tail()
 	endSql = strings.TrimSpace(endSql)
 	if endSql != "" {
-		endSql, err = Element(element.Parent(), endSql, ctx)
+		endSql, t, params, err = Element(element.Parent(), endSql, ctx)
 		if err != nil {
-			return nil, "", err
+			return nil, "", nil, nil, err
 		}
-		sql = append(sql, endSql)
+		SQL = append(SQL, endSql)
+		template = append(template, t)
+		args = append(args, params...)
 	}
-	return sql, element.Tag, nil
+	return SQL, element.Tag, template, args, nil
 }
 
-func Element(element *etree.Element, template string, ctx map[string]any) (string, error) {
+func Element(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
 	// 检擦 节点标签类型
 	tag := element.Tag
 	switch tag {
@@ -190,9 +202,9 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return StatementElement(element, template, ctx)
 	case Mapper:
 		// 对根标签不做任何处理
-		return "", nil
+		return "", "", nil, nil
 	}
-	return "", errors.New("error")
+	return "", "", nil, errors.New("error")
 }
 
 func Namespace(namespace string) string {

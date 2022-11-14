@@ -21,7 +21,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 		}
 		star := time.Now()
 		ctx := values[0].Interface()
-		statements, tag, err := build.Get(id, ctx)
+		statements, tag, templateSql, params, err := build.Get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			goto end
@@ -29,8 +29,9 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 		switch tag {
 		case Select:
 			Query = db.MethodByName("Query")
-			call := Query.Call([]reflect.Value{
-				reflect.ValueOf(statements),
+			call := Query.CallSlice([]reflect.Value{
+				reflect.ValueOf(templateSql),
+				reflect.ValueOf(params),
 			})
 			if !call[1].IsZero() {
 				errType = call[1]
@@ -49,8 +50,9 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			QueryResultMapper(value, result)
 		case Insert, Update, Delete:
 			Exec = db.MethodByName("Exec")
-			call := Exec.Call([]reflect.Value{
-				reflect.ValueOf(statements),
+			call := Exec.CallSlice([]reflect.Value{
+				reflect.ValueOf(templateSql),
+				reflect.ValueOf(params),
 			})
 			if !call[1].IsZero() {
 				errType = call[1]
@@ -66,7 +68,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			}
 		}
 		end := time.Now()
-		Info("SQL Statements ==>", statements, ",Context Parameter:", ctx, "Count:", value.Len(), "Time:", end.Sub(star).String())
+		Info(" \nSQL Statements ==>", statements, "\nSQL Template ==> ", templateSql, ",\nContext Parameter:", ctx, " \nCount:", value.Len(), "\nTime:", end.Sub(star).String())
 		return result
 	}
 }

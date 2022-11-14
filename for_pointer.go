@@ -3,7 +3,7 @@ package sgo
 type Pointer struct {
 }
 
-func (s Pointer) ForEach(value any, template string, separator string) (string, error) {
+func (s Pointer) ForEach(value any, template string, separator string) (string, string, []any, error) {
 
-	return "", nil
+	return "", "", nil, nil
 }

@@ -22,7 +22,7 @@ type UserModel struct {
 
 // UserMapper s
 type UserMapper struct {
-	Find       func(any, *sql.Tx) error
+	Find       func(any) error
 	FindUser   func(any) (UserModel, error)
 	UserSelect func(any) (map[string]any, error)
 }
@@ -33,7 +33,7 @@ func main() {
 		"name": "test",
 		"arr":  []int{1, 2, 3, 4, 5},
 	}
-	open, err := sql.Open("mysql", "xxx")
+	open, err := sql.Open("mysql", "X")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -51,4 +51,9 @@ func main() {
 		return
 	}
 	fmt.Println(user)
+	//err = mapper.Find(ctx)
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//	return
+	//}
 }

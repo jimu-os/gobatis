@@ -10,27 +10,29 @@ import (
 	"strings"
 )
 
-func StatementElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	analysisTemplate, err := AnalysisTemplate(template, ctx)
+func StatementElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
+	analysisTemplate, t, param, err := AnalysisTemplate(template, ctx)
 	if err != nil {
-		return "", fmt.Errorf("%s,%s,%s", element.Tag, element.SelectAttr("id").Value, err.Error())
+		return "", "", param, fmt.Errorf("%s,%s,%s", element.Tag, element.SelectAttr("id").Value, err.Error())
 	}
-	return analysisTemplate, nil
+	return analysisTemplate, t, param, nil
 }
 
-func ForElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
+func ForElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
 	return forElement(element, template, ctx)
 }
 
-func IfElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
+func IfElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
 	return ifElement(element, template, ctx)
 }
 
-func forElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
-	var slice, open, closes, column string
+func forElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
+	var slice, open, closes, column = "", "(", ")", ""
 	separator := ","
 	var attr *etree.Attr
 	buf := bytes.Buffer{}
+	templateBuf := bytes.Buffer{}
+	params := make([]any, 0)
 	if attr = element.SelectAttr("column"); attr != nil {
 		column = attr.Value
 	}
@@ -49,17 +51,20 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	}
 	if column != "" {
 		buf.WriteString(column + " IN ")
+		templateBuf.WriteString(column + " IN ")
 	}
 	// 上下文中取出 数据
 	t := UnTemplate(slice)
 	keys := strings.Split(t[1], ".")
 	v, err := ctxValue(ctx, keys)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
 	valueOf := reflect.ValueOf(v)
 	buf.WriteString(open)
-	var result string
+	templateBuf.WriteString(open)
+	var result, temp string
+	var param []any
 	// 解析 slice 属性迭代
 	combine := Combine{Value: v, Template: template, Separator: separator}
 	switch valueOf.Kind() {
@@ -70,46 +75,49 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	case reflect.Pointer:
 		combine.Politic = Pointer{}
 	}
-	result, err = combine.ForEach()
+	result, temp, param, err = combine.ForEach()
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
+	params = append(params, param...)
 	buf.WriteString(result)
+	templateBuf.WriteString(temp)
 	buf.WriteString(closes)
-	return buf.String(), nil
+	templateBuf.WriteString(closes)
+	return buf.String(), templateBuf.String(), params, nil
 }
 
-func ifElement(element *etree.Element, template string, ctx map[string]any) (string, error) {
+func ifElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
 	var attr *etree.Attr
 	attr = element.SelectAttr("expr")
 	if attr == nil {
-		return "", fmt.Errorf("%s,attr 'expr' not found", element.Tag)
+		return "", "", nil, fmt.Errorf("%s,attr 'expr' not found", element.Tag)
 	}
 	exprStr := attr.Value
 	if exprStr == "" {
-		return "", fmt.Errorf("%s,attr 'expr' value is empty", element.Tag)
+		return "", "", nil, fmt.Errorf("%s,attr 'expr' value is empty", element.Tag)
 	}
 	analysisExpr := AnalysisExpr(exprStr)
 	compile, err := expr.Compile(analysisExpr)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
 	run, err := expr.Run(compile, ctx)
 	if err != nil {
-		return "", err
+		return "", "", nil, err
 	}
 	var flag, f bool
 	if flag, f = run.(bool); !f {
-		return "", fmt.Errorf("%s,expr result is not bool type", element.Tag)
+		return "", "", nil, fmt.Errorf("%s,expr result is not bool type", element.Tag)
 	}
 	if flag {
-		analysisTemplate, err := AnalysisTemplate(template, ctx)
+		analysisTemplate, t, param, err := AnalysisTemplate(template, ctx)
 		if err != nil {
-			return "", fmt.Errorf("%s,template '%s'. %s", element.Tag, template, err.Error())
+			return "", t, param, fmt.Errorf("%s,template '%s'. %s", element.Tag, template, err.Error())
 		}
-		return analysisTemplate, nil
+		return analysisTemplate, t, param, nil
 	}
-	return "", nil
+	return "", "", nil, nil
 }
 
 // 把 map 或者 结构体完全转化为 map[any]
@@ -267,8 +275,10 @@ func AnalysisExpr(template string) string {
 }
 
 // AnalysisTemplate 模板解析器
-func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
+func AnalysisTemplate(template string, ctx map[string]any) (string, string, []any, error) {
+	params := []any{}
 	buf := bytes.Buffer{}
+	templateBuf := bytes.Buffer{}
 	template = strings.TrimSpace(template)
 	templateByte := []byte(template)
 	starIndex := 0
@@ -279,34 +289,44 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
 			for j := starIndex; j < len(templateByte); j++ {
 				if templateByte[j] == '}' {
 					endIndex = j
+					break
 				}
 			}
 			s := template[starIndex+1 : endIndex]
 			split := strings.Split(s, ".")
 			value, err := ctxValue(ctx, split)
 			if err != nil {
-				return "", fmt.Errorf("%s,'%s' not found", template, s)
+				return "", "", params, fmt.Errorf("%s,'%s' not found", template, s)
 			}
 			switch value.(type) {
 			case string:
 				buf.WriteString(fmt.Sprintf(" '%s' ", value.(string)))
+				templateBuf.WriteString("?")
+				params = append(params, value)
 			case int:
 				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
+				templateBuf.WriteString("?")
+				params = append(params, value)
 			case float64:
 				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
+				templateBuf.WriteString("?")
+				params = append(params, value)
 			default:
 				// 其他复杂数据类型
 				if handle := dataHandle(value); handle != "" {
 					buf.WriteString(" " + handle + " ")
+					templateBuf.WriteString(" " + handle + " ")
+					params = append(params, handle)
 				}
 			}
 			i = endIndex + 1
 			continue
 		}
 		buf.WriteByte(templateByte[i])
+		templateBuf.WriteByte(templateByte[i])
 		i++
 	}
-	return buf.String(), nil
+	return buf.String(), templateBuf.String(), params, nil
 }
 
 // 上下文中取数据

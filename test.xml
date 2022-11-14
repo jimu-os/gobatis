@@ -6,20 +6,9 @@
         select * from student where sss={name}
         <if expr="{arr}!=nil and {len(arr)}>0">
             and
-            <for slice="{arr}" item="obj">
+            <for slice="{arr}" item="obj" column="id">
                 {obj}
             </for>
-        </if>
-
-        <if expr="{name}=='aaa'" >
-          and abc = {name}
-            <if expr="1==1">
-                and 1={name}
-                <if expr="1==1">
-                    or 1!={name}
-                </if>
-            </if>
-           or cba={name}
         </if>
         or  name = {name} and 1=1
     </select>

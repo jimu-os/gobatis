@@ -8,7 +8,7 @@ import (
 
 type Politic interface {
 	// ForEach value 待处理迭代的数据 ctx 上下文数据 item 上下文数据key序列
-	ForEach(value any, template string, separator string) (string, error)
+	ForEach(value any, template string, separator string) (string, string, []any, error)
 }
 
 type Combine struct {
@@ -18,7 +18,7 @@ type Combine struct {
 	Politic
 }
 
-func (c Combine) ForEach() (string, error) {
+func (c Combine) ForEach() (string, string, []any, error) {
 	return c.Politic.ForEach(c.Value, c.Template, c.Separator)
 }
 
@@ -26,8 +26,10 @@ func (c Combine) ForEach() (string, error) {
 // template for标签下的文本内容
 // ctx 并不是全局的上下文数据，如果 for循环的 item是个 obj ，则ctx将表示 obj
 // v 如果 for循环的 item是个 基本类型 v 将代表它
-func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, error) {
+func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, string, []any, error) {
 	buf := bytes.Buffer{}
+	templateBuf := bytes.Buffer{}
+	params := []any{}
 	template = strings.TrimSpace(template)
 	templateByte := []byte(template)
 	starIndex := 0
@@ -48,25 +50,33 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, er
 			if len(split) > 1 && ctx != nil {
 				item, err = ctxValue(ctx, split)
 				if err != nil {
-					return "", fmt.Errorf("%s,'%s' not found", template, s)
+					return "", "", nil, fmt.Errorf("%s,'%s' not found", template, s)
 				}
 			} else {
 				item = v
 			}
 			if item == nil {
-				return "", fmt.Errorf("%s,'%s' not found", template, s)
+				return "", "", nil, fmt.Errorf("%s,'%s' not found", template, s)
 			}
 			switch item.(type) {
 			case string:
 				buf.WriteString(fmt.Sprintf(" '%s' ", item.(string)))
+				templateBuf.WriteString("?")
+				params = append(params, item)
 			case int:
 				buf.WriteString(fmt.Sprintf(" %d ", item.(int)))
+				templateBuf.WriteString("?")
+				params = append(params, item)
 			case float64:
 				buf.WriteString(fmt.Sprintf(" %f ", item.(float64)))
+				templateBuf.WriteString("?")
+				params = append(params, item)
 			default:
 				// 其他复杂数据类型
 				if handle := dataHandle(item); handle != "" {
 					buf.WriteString(" " + handle + " ")
+					templateBuf.WriteString("?")
+					params = append(params, handle)
 				}
 			}
 			i = endIndex + 1
@@ -75,5 +85,5 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, er
 		buf.WriteByte(templateByte[i])
 		i++
 	}
-	return buf.String(), nil
+	return buf.String(), templateBuf.String(), params, nil
 }
