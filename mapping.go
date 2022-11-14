@@ -11,7 +11,7 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Value) MapperFunc {
+func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		var value, resultType, errType, Query, Exec reflect.Value
 		db := build.db
@@ -86,7 +86,7 @@ func (build *Build) initMapper(id []string, fun reflect.Value) {
 		}
 		values = append(values, outValue)
 	}
-	f := reflect.MakeFunc(fun.Type(), build.mapper(id, fun, values))
+	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
 	fun.Set(f)
 }
 
