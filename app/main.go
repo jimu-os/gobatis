@@ -33,8 +33,7 @@ func main() {
 		"name": "test",
 		"arr":  []int{1, 2, 3, 4, 5},
 	}
-	open, err := sql.Open("mysql", "XX")
-	open.Begin()
+	open, err := sql.Open("mysql", "x")
 	if err != nil {
 		fmt.Println(err.Error())
 		return

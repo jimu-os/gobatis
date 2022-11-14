@@ -98,7 +98,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 			}
 			key = append(key, structField.Name)
 			build.initMapper(key, field)
-			Info(namespace + "." + structField.Name)
+			Info(namespace+"."+structField.Name, field.Type().String())
 		}
 	}
 }
@@ -219,7 +219,14 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 		}
 	}
 
-	// 入参大于1个的时候，最后一个参数只能是 *sql.Tx
+	if fun.Type().NumIn() == 1 {
+		Tx := reflect.TypeOf(&sql.Tx{})
+		if fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
+			return false, errors.New("an incoming parameter can only pass context parameters")
+		}
+	}
+
+	// 入参大于1个的时候，最后一个参数只能是 *sql.Tx,通过传递的 事务需要自己保证可用
 	if fun.Type().NumIn() > 1 {
 		Tx := reflect.TypeOf(&sql.Tx{})
 		if !fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
@@ -228,7 +235,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	}
 
 	// 多个参数接收时候，最后一个返回值只能是 error
-	if fun.Type().NumOut() > 2 {
+	if fun.Type().NumOut() > 1 {
 		// 校验最后一个参数必须是 error
 		err := fun.Type().Out(fun.Type().NumOut() - 1)
 		if !err.Implements(reflect.TypeOf(new(error)).Elem()) {

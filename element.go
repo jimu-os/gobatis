@@ -114,7 +114,7 @@ func ifElement(element *etree.Element, template string, ctx map[string]any) (str
 
 // 把 map 或者 结构体完全转化为 map[any]
 func toMap(value any) map[string]any {
-	if value != nil {
+	if value == nil {
 		return nil
 	}
 	valueOf := reflect.ValueOf(value)
