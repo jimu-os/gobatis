@@ -20,6 +20,7 @@ func New(db *sql.DB) *Build {
 	}
 	return &Build{
 		DB:         db,
+		db:         reflect.ValueOf(db),
 		NameSpaces: map[string]*Sql{},
 	}
 }
@@ -27,6 +28,7 @@ func New(db *sql.DB) *Build {
 type Build struct {
 	// DB 用于执行 sql 语句
 	DB *sql.DB
+	db reflect.Value
 	// SqlSource 用于保存 xml 配置的文件的根路径配置信息，Build会通过SqlSource属性去加载 xml 文件
 	SqlSource string
 	// NameSpaces 保存了每个 xml 配置的根元素构建出来的 Sql 对象

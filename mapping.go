@@ -13,49 +13,56 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 // Mapper 创建 映射函数
 func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-		var err error
-		var value, resultType, errType reflect.Value
-		var query *sql.Rows
-		var exec sql.Result
+		var value, resultType, errType, Query, Exec reflect.Value
+		db := build.db
+		Query = db.MethodByName("Query")
+		Exec = db.MethodByName("Exec")
 		star := time.Now()
 		ctx := values[0].Interface()
 		statements, tag, err := build.Get(id, ctx)
 		if err != nil {
+			errType = reflect.ValueOf(err)
 			goto end
 		}
 		switch tag {
 		case Select:
-			query, err = build.DB.Query(statements)
-			if err != nil {
+			call := Query.Call([]reflect.Value{
+				reflect.ValueOf(statements),
+			})
+			if !call[1].IsZero() {
+				errType = call[1]
 				goto end
 			}
+
 			if result[0].Kind() == reflect.Slice {
 				resultType = reflect.New(result[0].Type().Elem()).Elem()
 			} else {
 				resultType = result[0]
 			}
-			value, err = resultMapping(query, resultType.Interface())
-			if err != nil {
+			value, errType = resultMapping(call[0], resultType.Interface())
+			if !errType.IsZero() {
 				goto end
 			}
 			QueryResultMapper(value, result)
 		case Insert, Update, Delete:
-			exec, err = build.DB.Exec(statements)
-			if err != nil {
+			call := Exec.Call([]reflect.Value{
+				reflect.ValueOf(statements),
+			})
+			if !call[1].IsZero() {
+				errType = call[1]
 				goto end
 			}
-			err = ExecResultMapper(result, exec)
+			err = ExecResultMapper(result, call[0].Interface().(sql.Result))
 		}
 	end:
 		if (len(result) > 1 || len(result) == 1) && err != nil {
-			errType = reflect.ValueOf(err)
 			outEnd := result[len(result)-1]
 			if errType.Type().AssignableTo(outEnd.Type()) {
 				outEnd.Set(errType)
 			}
 		}
 		end := time.Now()
-		Info("SQL Statements ==>", statements, ",Context Parameter:", ctx, "Time:", end.Sub(star).String())
+		Info("SQL Statements ==>", statements, ",Context Parameter:", ctx, "Count:", value.Len(), "Time:", end.Sub(star).String())
 		return result
 	}
 }
@@ -79,24 +86,27 @@ func (build *Build) initMapper(id []string, fun reflect.Value) {
 	fun.Set(f)
 }
 
-func resultMapping(row *sql.Rows, resultType any) (reflect.Value, error) {
+func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Value) {
 	var err error
-	var columns []string
 	var flag bool
-	of := reflect.ValueOf(row)
+	var column []string
+	//of := reflect.ValueOf(row)
 	// 确定数据库 列顺序 排列扫描顺序
-	columns, err = row.Columns()
-	if err != nil {
-		panic(err.Error())
+	columns := row.MethodByName("Columns").Call(nil)
+	if !columns[1].IsZero() {
+		return reflect.Value{}, columns[1]
+	}
+	if column, flag = columns[0].Interface().([]string); !flag {
+		return reflect.Value{}, reflect.ValueOf(errors.New("get row column error"))
 	}
 	// 校验 resultType 是否覆盖了结果集
-	if flag, err = SelectCheck(columns, resultType); !flag {
-		return reflect.Value{}, err
+	if flag, err = SelectCheck(column, resultType); !flag {
+		return reflect.Value{}, reflect.ValueOf(err)
 	}
 	// 解析结构体 映射字段
 	// 拿到 scan 方法
-	scan := of.MethodByName("Scan")
-	next := of.MethodByName("Next")
+	scan := row.MethodByName("Scan")
+	next := row.MethodByName("Next")
 	t := reflect.SliceOf(reflect.TypeOf(resultType))
 	result := reflect.MakeSlice(t, 0, 0)
 	mapping := ResultMapping(resultType)
@@ -115,7 +125,7 @@ func resultMapping(row *sql.Rows, resultType any) (reflect.Value, error) {
 			unValue = value
 		}
 		// 创建 接收器
-		values, fieldIndexMap, MapKey := buildScan(unValue, columns, mapping)
+		values, fieldIndexMap, MapKey := buildScan(unValue, column, mapping)
 		// 执行扫描, 执行结果扫描，不处理error 扫码结果类型不匹配，默认为零值
 		scan.Call(values)
 		// 迭代是否有特殊结构体 主要对 时间类型做了处理
@@ -124,7 +134,7 @@ func resultMapping(row *sql.Rows, resultType any) (reflect.Value, error) {
 		// 添加结果集
 		result = reflect.Append(result, value)
 	}
-	return result, nil
+	return result, reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 }
 
 // 构建结构体接收器
