@@ -94,7 +94,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 			}
 			// mapper 函数校验规范
 			if flag, err := MapperCheck(field); !flag {
-				Panic(namespace+"."+structField.Name, ",", err.Error())
+				Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
 			}
 			key = append(key, structField.Name)
 			build.initMapper(key, field)
@@ -219,6 +219,14 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 		}
 	}
 
+	// 入参大于1个的时候，最后一个参数只能是 *sql.Tx
+	if fun.Type().NumIn() > 1 {
+		Tx := reflect.TypeOf(&sql.Tx{})
+		if !fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
+			return false, errors.New("the last entry is of the wrong type and requires *sql.Tx")
+		}
+	}
+
 	// 多个参数接收时候，最后一个返回值只能是 error
 	if fun.Type().NumOut() > 2 {
 		// 校验最后一个参数必须是 error
@@ -227,5 +235,6 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 			return false, errors.New("the second return value must be error")
 		}
 	}
+
 	return true, nil
 }
