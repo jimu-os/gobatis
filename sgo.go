@@ -16,7 +16,11 @@ var banner = " __ __ _  \n(_ /__/ \\ \n__)\\_|\\_/ \n"
 
 func New(db *sql.DB) *Build {
 	if db == nil {
-		panic("db nil")
+		Panic("db nil")
+	}
+	err := db.Ping()
+	if err != nil {
+		Panic(err)
 	}
 	return &Build{
 		DB:         db,
@@ -201,10 +205,6 @@ func Namespace(namespace string) string {
 // MapperCheck 检查 不同类别的sql标签 Mapper 函数是否符合规范
 // 规则: 入参只能有一个并且只能是 map 或者 结构体，对返回值最后一个参数必须是error
 func MapperCheck(fun reflect.Value) (bool, error) {
-	// 只能有一个入参
-	if fun.Type().NumIn() != 1 {
-		return false, errors.New("there can only be one argument")
-	}
 
 	// 至少有一个返回值
 	if fun.Type().NumOut() < 1 {

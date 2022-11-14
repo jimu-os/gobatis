@@ -15,8 +15,10 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 	return func(values []reflect.Value) []reflect.Value {
 		var value, resultType, errType, Query, Exec reflect.Value
 		db := build.db
-		Query = db.MethodByName("Query")
-		Exec = db.MethodByName("Exec")
+		length := len(values)
+		if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
+			db.Set(values[length-1])
+		}
 		star := time.Now()
 		ctx := values[0].Interface()
 		statements, tag, err := build.Get(id, ctx)
@@ -26,6 +28,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 		}
 		switch tag {
 		case Select:
+			Query = db.MethodByName("Query")
 			call := Query.Call([]reflect.Value{
 				reflect.ValueOf(statements),
 			})
@@ -45,6 +48,7 @@ func (build *Build) mapper(id []string, fun reflect.Value, result []reflect.Valu
 			}
 			QueryResultMapper(value, result)
 		case Insert, Update, Delete:
+			Exec = db.MethodByName("Exec")
 			call := Exec.Call([]reflect.Value{
 				reflect.ValueOf(statements),
 			})
@@ -90,25 +94,25 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 	var err error
 	var flag bool
 	var column []string
-	//of := reflect.ValueOf(row)
+	t := reflect.SliceOf(reflect.TypeOf(resultType))
+	result := reflect.MakeSlice(t, 0, 0)
 	// 确定数据库 列顺序 排列扫描顺序
 	columns := row.MethodByName("Columns").Call(nil)
 	if !columns[1].IsZero() {
-		return reflect.Value{}, columns[1]
+		return result, columns[1]
 	}
 	if column, flag = columns[0].Interface().([]string); !flag {
-		return reflect.Value{}, reflect.ValueOf(errors.New("get row column error"))
+		return result, reflect.ValueOf(errors.New("get row column error"))
 	}
 	// 校验 resultType 是否覆盖了结果集
 	if flag, err = SelectCheck(column, resultType); !flag {
-		return reflect.Value{}, reflect.ValueOf(err)
+		return result, reflect.ValueOf(err)
 	}
 	// 解析结构体 映射字段
 	// 拿到 scan 方法
 	scan := row.MethodByName("Scan")
 	next := row.MethodByName("Next")
-	t := reflect.SliceOf(reflect.TypeOf(resultType))
-	result := reflect.MakeSlice(t, 0, 0)
+
 	mapping := ResultMapping(resultType)
 	for (next.Call(nil))[0].Interface().(bool) {
 		var value, unValue reflect.Value

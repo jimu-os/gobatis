@@ -2,6 +2,7 @@ package sgo
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
@@ -113,6 +114,9 @@ func ifElement(element *etree.Element, template string, ctx map[string]any) (str
 
 // 把 map 或者 结构体完全转化为 map[any]
 func toMap(value any) map[string]any {
+	if value != nil {
+		return nil
+	}
 	valueOf := reflect.ValueOf(value)
 	if valueOf.Kind() != reflect.Map && valueOf.Kind() != reflect.Struct && valueOf.Kind() != reflect.Pointer {
 		return map[string]any{}
@@ -229,6 +233,7 @@ func dataHandle(value any) string {
 	return ""
 }
 
+// UnTemplate 解析 {xx} 模板 解析为三个部分 ["{","xx","}"]
 func UnTemplate(template string) []string {
 	length := len(template)
 	return []string{template[0:1], template[1 : length-1], template[length-1:]}
@@ -306,6 +311,9 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, error) {
 
 // 上下文中取数据
 func ctxValue(ctx map[string]any, keys []string) (any, error) {
+	if ctx == nil {
+		return nil, errors.New("ctx is nil")
+	}
 	kl := len(keys)
 	var v any
 	b := false
