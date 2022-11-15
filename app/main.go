@@ -36,29 +36,43 @@ type Student struct {
 }
 
 type StudentMapper struct {
-	InsertOne func(any) (int, error)
+	InsertOne func(any) (int64, error)
+	InsertArr func(any) (int64, error)
 }
 
 func main() {
 	ctx := map[string]any{
-		"id":   "1",
-		"name": "test1",
-		"age":  19,
-		"time": time.Now().Format("2006-01-02 15:04:05"),
+		"arr": []map[string]any{
+			{
+				"id":   "1",
+				"name": "test1",
+				"age":  19,
+				"time": time.Now().Format("2006-01-02 15:04:05"),
+			},
+			{
+				"id":   "2",
+				"name": "test2",
+				"age":  19,
+				"time": time.Now().Format("2006-01-02 15:04:05"),
+			},
+			{
+				"id":   "3",
+				"name": "test3",
+				"age":  19,
+				"time": time.Now().Format("2006-01-02 15:04:05"),
+			},
+		},
 	}
-	open, err := sql.Open("mysql", "sss")
+	open, err := sql.Open("mysql", "root:Aurora@2022@(82.157.160.117:3306)/community")
 	if err != nil {
 		fmt.Println(err.Error())
-		return
-	}
-	if err != nil {
 		return
 	}
 	build := sgo.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
-	count, err := mapper.InsertOne(ctx)
+	count, err := mapper.InsertArr(ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

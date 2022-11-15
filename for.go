@@ -48,7 +48,7 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 			s := template[starIndex+1 : endIndex]
 			split := strings.Split(s, ".")
 			if len(split) > 1 && ctx != nil {
-				item, err = ctxValue(ctx, split)
+				item, err = sliceCtxValue(ctx, split)
 				if err != nil {
 					return "", "", nil, fmt.Errorf("%s,'%s' not found", template, s)
 				}
@@ -83,6 +83,7 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 			continue
 		}
 		buf.WriteByte(templateByte[i])
+		templateBuf.WriteByte(templateByte[i])
 		i++
 	}
 	return buf.String(), templateBuf.String(), params, nil

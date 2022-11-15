@@ -27,7 +27,7 @@ func IfElement(element *etree.Element, template string, ctx map[string]any) (str
 }
 
 func forElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
-	var slice, open, closes, column = "", "(", ")", ""
+	var slice, open, closes, column string
 	separator := ","
 	var attr *etree.Attr
 	buf := bytes.Buffer{}
@@ -61,8 +61,10 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		return "", "", nil, err
 	}
 	valueOf := reflect.ValueOf(v)
-	buf.WriteString(open)
-	templateBuf.WriteString(open)
+	if open != "" {
+		buf.WriteString(open)
+		templateBuf.WriteString(open)
+	}
 	var result, temp string
 	var param []any
 	// 解析 slice 属性迭代
@@ -82,8 +84,10 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	params = append(params, param...)
 	buf.WriteString(result)
 	templateBuf.WriteString(temp)
-	buf.WriteString(closes)
-	templateBuf.WriteString(closes)
+	if closes != "" {
+		buf.WriteString(closes)
+		templateBuf.WriteString(closes)
+	}
 	return buf.String(), templateBuf.String(), params, nil
 }
 
@@ -215,6 +219,7 @@ func filedToMap(value any) []map[string]any {
 				key := iter.Key().Interface().(string)
 				v := iter.Value()
 				var vals any
+				vals = v.Interface()
 				if v.Kind() == reflect.Slice {
 					vals = filedToMap(v.Interface())
 				}
@@ -222,8 +227,8 @@ func filedToMap(value any) []map[string]any {
 					vals = toMap(v.Interface())
 				}
 				m[key] = vals
-				arr = append(arr, m)
 			}
+			arr = append(arr, m)
 		}
 	}
 	return arr
@@ -337,6 +342,33 @@ func ctxValue(ctx map[string]any, keys []string) (any, error) {
 	kl := len(keys)
 	var v any
 	b := false
+	for i := 0; i < kl; i++ {
+		k := keys[i]
+		if i == kl-1 {
+			if v, b = ctx[k]; !b {
+				return nil, fmt.Errorf("'slice' key %s not find ", k)
+			}
+		} else {
+			if v, b = ctx[k]; !b {
+				return nil, fmt.Errorf("'slice' key %s not find ", k)
+			}
+			if ctx, b = v.(map[string]any); !b {
+				return nil, fmt.Errorf("'%s' is not map or struct", k)
+			}
+		}
+	}
+	return v, nil
+}
+
+// 上下文中取数据
+func sliceCtxValue(ctx map[string]any, keys []string) (any, error) {
+	if ctx == nil {
+		return nil, errors.New("ctx is nil")
+	}
+	var v any
+	b := false
+	keys = keys[1:]
+	kl := len(keys)
 	for i := 0; i < kl; i++ {
 		k := keys[i]
 		if i == kl-1 {

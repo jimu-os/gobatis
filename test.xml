@@ -5,4 +5,12 @@
     <insert id="InsertOne">
         insert into student(id,name,age,create_time) value({id},{name},{age},{time})
     </insert>
+
+    <insert id="InsertArr">
+        insert into student(id,name,age,create_time) values
+        <for slice="{arr}" item="obj">
+            ({obj.id},{obj.name},{obj.age},{obj.time})
+        </for>
+    </insert>
+
 </mapper>

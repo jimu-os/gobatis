@@ -23,7 +23,8 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 		statements, tag, templateSql, params, err := build.Get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
-			goto end
+			values[length-1] = errType
+			return values
 		}
 		switch tag {
 		case Select:
@@ -48,7 +49,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			}
 			QueryResultMapper(value, result)
 			end := time.Now()
-			Info(" \nSQL Statements ==>", statements, "\nSQL Template ==> ", templateSql, ",\nContext Parameter:", ctx, " \nCount:", value.Len(), "\nTime:", end.Sub(star).String())
+			Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Context Parameter:", ctx, "Count:", value.Len(), "Time:", end.Sub(star).String())
 		case Insert, Update, Delete:
 			if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
 				db.Set(values[length-1])
@@ -72,10 +73,14 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 				errType = call[1]
 				goto end
 			}
-			err = ExecResultMapper(result, call[0].Interface().(sql.Result))
+			var count int64
+			count, err = ExecResultMapper(result, call[0].Interface().(sql.Result))
 			if err != nil {
 				errType.Set(reflect.ValueOf(err))
+				goto end
 			}
+			end := time.Now()
+			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Context Parameter:", ctx, "Count:", count, "Time:", end.Sub(star).String())
 		}
 	end:
 		outEnd := result[len(result)-1]
@@ -342,13 +347,14 @@ func QueryResultMapper(value reflect.Value, result []reflect.Value) {
 // 规则:
 // insert,update,delete,默认第一个返回值为 执行sql 影响的具体行数
 // insert 第二个返回参数是 自增长主键
-func ExecResultMapper(result []reflect.Value, exec sql.Result) (err error) {
+func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New(e.(string))
+			count = -1
 		}
 	}()
-	var count int64
+	var lid int64
 	length := len(result)
 	for i := 0; i < length-1; i++ {
 		if i == 0 {
@@ -359,11 +365,11 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (err error) {
 			result[i].Set(reflect.ValueOf(count))
 		}
 		if i == 1 {
-			count, err = exec.LastInsertId()
+			lid, err = exec.LastInsertId()
 			if err != nil {
 				return
 			}
-			result[i].Set(reflect.ValueOf(count))
+			result[i].Set(reflect.ValueOf(lid))
 		}
 		if i > 1 {
 			break
