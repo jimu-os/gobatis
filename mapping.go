@@ -278,24 +278,33 @@ func SelectCheck(columns []string, resultType any) (bool, error) {
 	return true, nil
 }
 
+// QueryResultMapper SQL 查询结果赋值
 func QueryResultMapper(value reflect.Value, result []reflect.Value) {
+	var itemT reflect.Type
+	var itemV reflect.Value
 	length := len(result)
-	out0 := result[0]
+	if value.Len() == 0 {
+		return
+	}
+	itemT = value.Type().Elem()
+	itemV = value.Index(0)
 	for i := 0; i < length-1; i++ {
-		if value.Type().AssignableTo(out0.Type()) {
-			out0.Set(value)
-			break
+		out := result[i]
+		if value.Type().AssignableTo(out.Type()) {
+			out.Set(value)
 		}
-		if out0.Kind() != reflect.Slice {
-			v0 := value.Index(0)
-			if v0.Type().AssignableTo(out0.Type()) {
-				out0.Set(v0)
-				break
+		if out.Kind() != reflect.Slice {
+			if itemT.AssignableTo(out.Type()) {
+				out.Set(itemV)
 			}
 		}
 	}
 }
 
+// ExecResultMapper SQL执行结果赋值
+// 规则:
+// insert,update,delete,默认第一个返回值为 执行sql 影响的具体行数
+// insert 第二个返回参数是 自增长主键
 func ExecResultMapper(result []reflect.Value, exec sql.Result) error {
 	length := len(result)
 	for i := 0; i < length-1; i++ {

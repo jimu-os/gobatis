@@ -223,7 +223,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 		return false, errors.New("at least one return value is required")
 	}
 
-	// 只有一个参数接收时候，只能是 结果集对应类型
+	// 只有一个参数接收时候，只能是 error
 	if fun.Type().NumOut() == 1 {
 		err := fun.Type().Out(0)
 		if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
