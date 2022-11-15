@@ -109,10 +109,6 @@ func initField(value reflect.Value) {
 		}
 		if field.Kind() == reflect.Pointer {
 			if field.IsZero() {
-				if !field.CanSet() {
-					elem := reflect.New(field.Type()).Elem()
-					field.Set(elem)
-				}
 				if !field.Elem().CanSet() {
 					elem := reflect.New(field.Type()).Elem()
 					fmt.Println(elem.Type().String())
