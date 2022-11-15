@@ -1,24 +1,8 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE mapper SYSTEM "http://sgo.com">
 
-<mapper namespace="UserMapper">
-    <select id="Find">
-        select * from student where sss={name}
-        <if expr="{arr}!=nil and {len(arr)}>0">
-            and
-            <for slice="{arr}" item="obj" column="id">
-                {obj}
-            </for>
-        </if>
-        or  name = {name} and 1=1
-    </select>
-
-    <select id="FindUser">
-        select * from comm_user where user_id={id}
-    </select>
-
-    <select id="UserSelect">
-        select * from comm_user where user_id={id}
-    </select>
-
+<mapper namespace="StudentMapper">
+    <insert id="InsertOne">
+        insert into student(id,name,age,create_time) value({id},{name},{age},{time})
+    </insert>
 </mapper>

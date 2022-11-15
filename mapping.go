@@ -13,12 +13,11 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 // Mapper 创建 映射函数
 func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-		var value, resultType, errType, Query, Exec reflect.Value
+		var value, resultType, errType, Query, Exec, BeginCall reflect.Value
+		aout := true
+		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := build.db
 		length := len(values)
-		if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
-			db.Set(values[length-1])
-		}
 		star := time.Now()
 		ctx := values[0].Interface()
 		statements, tag, templateSql, params, err := build.Get(id, ctx)
@@ -48,8 +47,23 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 				goto end
 			}
 			QueryResultMapper(value, result)
+			end := time.Now()
+			Info(" \nSQL Statements ==>", statements, "\nSQL Template ==> ", templateSql, ",\nContext Parameter:", ctx, " \nCount:", value.Len(), "\nTime:", end.Sub(star).String())
 		case Insert, Update, Delete:
-			Exec = db.MethodByName("Exec")
+			if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
+				db.Set(values[length-1])
+				Exec = db.MethodByName("Exec")
+				aout = false
+			} else {
+				BeginFunc := db.MethodByName("Begin")
+				call := BeginFunc.Call(nil)
+				if !call[1].IsZero() {
+					errType = call[1]
+					goto end
+				}
+				BeginCall = call[0]
+				Exec = BeginCall.MethodByName("Exec")
+			}
 			call := Exec.CallSlice([]reflect.Value{
 				reflect.ValueOf(templateSql),
 				reflect.ValueOf(params),
@@ -59,16 +73,28 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 				goto end
 			}
 			err = ExecResultMapper(result, call[0].Interface().(sql.Result))
-		}
-	end:
-		if (len(result) > 1 || len(result) == 1) && err != nil {
-			outEnd := result[len(result)-1]
-			if errType.Type().AssignableTo(outEnd.Type()) {
-				outEnd.Set(errType)
+			if err != nil {
+				errType.Set(reflect.ValueOf(err))
 			}
 		}
-		end := time.Now()
-		Info(" \nSQL Statements ==>", statements, "\nSQL Template ==> ", templateSql, ",\nContext Parameter:", ctx, " \nCount:", value.Len(), "\nTime:", end.Sub(star).String())
+	end:
+		outEnd := result[len(result)-1]
+		if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
+			outEnd.Set(errType)
+			if aout {
+				RollbackFunc := BeginCall.MethodByName("Rollback")
+				Rollback := RollbackFunc.Call(nil)
+				if !Rollback[0].IsZero() {
+					outEnd.Set(Rollback[0])
+				}
+			}
+		} else {
+			CommitFunc := BeginCall.MethodByName("Commit")
+			Commit := CommitFunc.Call(nil)
+			if !Commit[0].IsZero() {
+				outEnd.Set(Commit[0])
+			}
+		}
 		return result
 	}
 }
@@ -316,26 +342,32 @@ func QueryResultMapper(value reflect.Value, result []reflect.Value) {
 // 规则:
 // insert,update,delete,默认第一个返回值为 执行sql 影响的具体行数
 // insert 第二个返回参数是 自增长主键
-func ExecResultMapper(result []reflect.Value, exec sql.Result) error {
+func ExecResultMapper(result []reflect.Value, exec sql.Result) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(e.(string))
+		}
+	}()
+	var count int64
 	length := len(result)
 	for i := 0; i < length-1; i++ {
 		if i == 0 {
-			affected, err := exec.RowsAffected()
+			count, err = exec.RowsAffected()
 			if err != nil {
-				return err
+				return
 			}
-			result[i].Set(reflect.ValueOf(affected))
+			result[i].Set(reflect.ValueOf(count))
 		}
 		if i == 1 {
-			affected, err := exec.LastInsertId()
+			count, err = exec.LastInsertId()
 			if err != nil {
-				return err
+				return
 			}
-			result[i].Set(reflect.ValueOf(affected))
+			result[i].Set(reflect.ValueOf(count))
 		}
 		if i > 1 {
 			break
 		}
 	}
-	return nil
+	return
 }
