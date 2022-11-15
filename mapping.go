@@ -292,11 +292,8 @@ func QueryResultMapper(value reflect.Value, result []reflect.Value) {
 		out := result[i]
 		if value.Type().AssignableTo(out.Type()) {
 			out.Set(value)
-		}
-		if out.Kind() != reflect.Slice {
-			if itemT.AssignableTo(out.Type()) {
-				out.Set(itemV)
-			}
+		} else if itemT.AssignableTo(out.Type()) {
+			out.Set(itemV)
 		}
 	}
 }
