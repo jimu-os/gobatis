@@ -5,19 +5,20 @@ import (
 	"fmt"
 	"gitee.com/aurora-engine/sgo"
 	_ "github.com/go-sql-driver/mysql"
+	"time"
 )
 
 // UserModel 用户模型
 type UserModel struct {
-	UserId          string `column:"user_id"`
-	UserAccount     string `column:"user_account"`
-	UserEmail       string `column:"user_email"`
-	UserPassword    string `column:"user_password"`
-	UserName        string `column:"user_name"`
-	UserAge         int    `column:"user_age"`
-	UserBirthday    string `column:"user_birthday"`
-	UserHeadPicture string `column:"user_head_picture"`
-	UserCreateTime  string `column:"user_create_time"`
+	UserId          string     `column:"user_id"`
+	UserAccount     string     `column:"user_account"`
+	UserEmail       string     `column:"user_email"`
+	UserPassword    string     `column:"user_password"`
+	UserName        string     `column:"user_name"`
+	UserAge         int        `column:"user_age"`
+	UserBirthday    string     `column:"user_birthday"`
+	UserHeadPicture string     `column:"user_head_picture"`
+	UserCreateTime  *time.Time `column:"user_create_time"`
 }
 
 // UserMapper s

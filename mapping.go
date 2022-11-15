@@ -3,7 +3,7 @@ package sgo
 import (
 	"database/sql"
 	"errors"
-	"github.com/druidcaesa/ztool"
+	"fmt"
 	"reflect"
 	"time"
 )
@@ -84,12 +84,49 @@ func (build *Build) initMapper(id []string, fun reflect.Value) {
 			elem := reflect.New(out.Elem())
 			if outValue.CanSet() {
 				outValue.Set(elem)
+				initField(outValue)
 			}
 		}
+		initField(outValue)
 		values = append(values, outValue)
 	}
 	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
 	fun.Set(f)
+}
+
+func initField(value reflect.Value) {
+	if value.Kind() == reflect.Pointer {
+		value = value.Elem()
+		initField(value)
+	}
+	if value.Kind() != reflect.Struct {
+		return
+	}
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Field(i)
+		if !field.CanSet() {
+			continue
+		}
+		if field.Kind() == reflect.Pointer {
+			if field.IsZero() {
+				if !field.CanSet() {
+					elem := reflect.New(field.Type()).Elem()
+					field.Set(elem)
+				}
+				if !field.Elem().CanSet() {
+					elem := reflect.New(field.Type()).Elem()
+					fmt.Println(elem.Type().String())
+					field.Set(elem)
+				}
+			}
+			initField(field)
+			continue
+		}
+		if field.Kind() == reflect.Struct {
+			initField(field)
+			continue
+		}
+	}
 }
 
 func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Value) {
@@ -173,6 +210,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 			panic("The type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
 		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
+		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
 		field := byName.Interface()
 		switch field.(type) {
 		case time.Time:
@@ -185,7 +223,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		case *time.Time:
 			// 记录特殊 值的索引 并且替换掉
 			index := len(values)
-			fieldIndexMap[index] = byName.Addr()
+			fieldIndexMap[index] = byName
 			// 替换 使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
@@ -202,30 +240,10 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 	for k, v := range fieldIndexMap {
 		// 拿到 特殊结构体对应的 值
 		mapV := values[k]
-		structField := v.Interface()
-		switch structField.(type) {
-		case *time.Time:
-			// 吧把对应的 mappv 转化为 time.Time
-			mappvalueString := mapV.Elem().Interface().(string)
-			parse, err := ztool.DateUtils.Parse(mappvalueString)
-			if err != nil {
-				panic(err)
-			}
-			t2 := parse.Time()
-			valueOf := reflect.ValueOf(t2)
-			//设置该指针指向的值
-			v.Elem().Set(valueOf)
-		case **time.Time:
-			// 吧把对应的 mappv 转化为 time.Time
-			mappvalueString := mapV.Elem().Interface().(string)
-			parse, err := ztool.DateUtils.Parse(mappvalueString)
-			if err != nil {
-				panic(err)
-			}
-			t2 := parse.Time()
-			valueOf := reflect.ValueOf(&t2)
-			//设置该指针指向的值
-			v.Elem().Set(valueOf)
+		key := BaseTypeKey(v)
+		err := BaseType[key](v, mapV.Elem().Interface())
+		if err != nil {
+			Panic(err)
 		}
 	}
 }
