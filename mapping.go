@@ -14,12 +14,15 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		var value, resultType, errType, Query, Exec, BeginCall reflect.Value
+		var ctx any
 		aout := true
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := build.db
 		length := len(values)
 		star := time.Now()
-		ctx := values[0].Interface()
+		if length >= 1 {
+			ctx = values[0].Interface()
+		}
 		statements, tag, templateSql, params, err := build.Get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
@@ -49,7 +52,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			}
 			QueryResultMapper(value, result)
 			end := time.Now()
-			Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Context Parameter:", ctx, "Count:", value.Len(), "Time:", end.Sub(star).String())
+			Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
 		case Insert, Update, Delete:
 			if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
 				db.Set(values[length-1])
@@ -80,7 +83,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 				goto end
 			}
 			end := time.Now()
-			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Context Parameter:", ctx, "Count:", count, "Time:", end.Sub(star).String())
+			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
 		}
 	end:
 		outEnd := result[len(result)-1]
@@ -93,7 +96,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 					outEnd.Set(Rollback[0])
 				}
 			}
-		} else {
+		} else if BeginCall != (reflect.Value{}) {
 			CommitFunc := BeginCall.MethodByName("Commit")
 			Commit := CommitFunc.Call(nil)
 			if !Commit[0].IsZero() {
