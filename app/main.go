@@ -69,7 +69,7 @@ func main() {
 		"id":  "1",
 		"ids": []string{"1", "2"},
 	}
-	open, err := sql.Open("mysql", "xxx")
+	open, err := sql.Open("mysql", "root:Aurora@2022@(82.157.160.117:3306)/community")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
