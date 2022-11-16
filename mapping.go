@@ -46,6 +46,19 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	}
 }
 
+// Args 参数赋值处理
+// 处理定义函数的入参，返回一个参数序列给到后面的函数调用入参
+func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value) {
+	length := len(values)
+	if length == 1 {
+		args = values[0].Interface()
+	} else if length == 2 {
+
+	}
+	return
+}
+
+// SelectStatement 执行查询
 func SelectStatement(db reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
@@ -72,6 +85,7 @@ func SelectStatement(db reflect.Value, statements, templateSql string, params []
 	return err
 }
 
+// ExecStatement 执行修改
 func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements, templateSql string, params []any, values, result []reflect.Value) (reflect.Value, bool) {
 	auto := true
 	star := time.Now()
@@ -108,6 +122,7 @@ func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements,
 	return errType, auto
 }
 
+// End 错误提交及回滚
 func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 	length := len(result)
 	outEnd := (result)[length-1]
