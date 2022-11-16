@@ -78,10 +78,10 @@ func main() {
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
-	count, lid, err := mapper.InsertArr(ctx)
+	count, _, err := mapper.InsertArr(ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(count, lid)
+	fmt.Println(count)
 }
