@@ -69,7 +69,7 @@ func main() {
 		"id":  "1",
 		"ids": []string{"1", "2"},
 	}
-	open, err := sql.Open("mysql", "xxx")
+	open, err := sql.Open("mysql", "xx")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -78,7 +78,7 @@ func main() {
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
-	count, _, err := mapper.InsertArr(ctx)
+	count, err := mapper.InsertOne(ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 		return

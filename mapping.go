@@ -93,7 +93,7 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())*/
 		}
 	end:
-		End(auto, &result, &errType, &BeginCall)
+		End(auto, result, errType, BeginCall)
 		/*outEnd := result[len(result)-1]
 		if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
 			outEnd.Set(errType)
@@ -177,11 +177,11 @@ func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements,
 	return errType, auto
 }
 
-func End(auto bool, result *[]reflect.Value, errType, BeginCall *reflect.Value) {
-	length := len(*result)
-	outEnd := (*result)[length-1]
-	if (*errType).Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
-		outEnd.Set(*errType)
+func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
+	length := len(result)
+	outEnd := (result)[length-1]
+	if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
+		outEnd.Set(errType)
 		if auto {
 			RollbackFunc := BeginCall.MethodByName("Rollback")
 			Rollback := RollbackFunc.Call(nil)
@@ -189,7 +189,7 @@ func End(auto bool, result *[]reflect.Value, errType, BeginCall *reflect.Value) 
 				outEnd.Set(Rollback[0])
 			}
 		}
-	} else if *BeginCall != (reflect.Value{}) {
+	} else if BeginCall != (reflect.Value{}) {
 		CommitFunc := BeginCall.MethodByName("Commit")
 		Commit := CommitFunc.Call(nil)
 		if !Commit[0].IsZero() {
