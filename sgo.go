@@ -217,12 +217,10 @@ func Namespace(namespace string) string {
 // MapperCheck 检查 不同类别的sql标签 Mapper 函数是否符合规范
 // 规则: 入参只能有一个并且只能是 map 或者 结构体，对返回值最后一个参数必须是error
 func MapperCheck(fun reflect.Value) (bool, error) {
-
 	// 至少有一个返回值
 	if fun.Type().NumOut() < 1 {
 		return false, errors.New("at least one return value is required")
 	}
-
 	// 只有一个参数接收时候，只能是 error
 	if fun.Type().NumOut() == 1 {
 		err := fun.Type().Out(0)
@@ -230,30 +228,5 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 			return false, errors.New("the second return value must be error")
 		}
 	}
-
-	//if fun.Type().NumIn() == 1 {
-	//	Tx := reflect.TypeOf(&sql.Tx{})
-	//	if fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
-	//		return false, errors.New("an incoming parameter can only pass context parameters")
-	//	}
-	//}
-
-	// 入参大于1个的时候，最后一个参数只能是 *sql.Tx,通过传递的 事务需要自己保证可用
-	//if fun.Type().NumIn() > 1 {
-	//	Tx := reflect.TypeOf(&sql.Tx{})
-	//	if !fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
-	//		return false, errors.New("the last entry is of the wrong type and requires *sql.Tx")
-	//	}
-	//}
-
-	// 多个参数接收时候，最后一个返回值只能是 error
-	//if fun.Type().NumOut() > 1 {
-	//	// 校验最后一个参数必须是 error
-	//	err := fun.Type().Out(fun.Type().NumOut() - 1)
-	//	if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
-	//		return false, errors.New("the second return value must be error")
-	//	}
-	//}
-
 	return true, nil
 }
