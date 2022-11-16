@@ -13,97 +13,134 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 // Mapper 创建 映射函数
 func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-		var value, resultType, errType, Query, Exec, BeginCall reflect.Value
+		var errType, Exec, BeginCall reflect.Value
 		var ctx any
-		aout := true
+		auto := true
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := build.db
 		length := len(values)
-		star := time.Now()
 		if length >= 1 {
 			ctx = values[0].Interface()
 		}
 		statements, tag, templateSql, params, err := build.Get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
-			values[length-1] = errType
-			return values
+			result[len(result)-1] = errType
+			return result
 		}
 		switch tag {
 		case Select:
-			Query = db.MethodByName("Query")
-			call := Query.CallSlice([]reflect.Value{
-				reflect.ValueOf(templateSql),
-				reflect.ValueOf(params),
-			})
-			if !call[1].IsZero() {
-				errType = call[1]
+			err := SelectStatement(db, statements, templateSql, params, result)
+			if errType = err; !errType.IsZero() {
 				goto end
 			}
-
-			if result[0].Kind() == reflect.Slice {
-				resultType = reflect.New(result[0].Type().Elem()).Elem()
-			} else {
-				resultType = result[0]
-			}
-			value, errType = resultMapping(call[0], resultType.Interface())
+		case Insert, Update, Delete:
+			errType, auto = ExecStatement(db, Exec, &BeginCall, statements, templateSql, params, values, result)
 			if !errType.IsZero() {
 				goto end
 			}
-			QueryResultMapper(value, result)
-			end := time.Now()
-			Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
-		case Insert, Update, Delete:
-			if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
-				db.Set(values[length-1])
-				Exec = db.MethodByName("Exec")
-				aout = false
-			} else {
-				BeginFunc := db.MethodByName("Begin")
-				call := BeginFunc.Call(nil)
-				if !call[1].IsZero() {
-					errType = call[1]
-					goto end
-				}
-				BeginCall = call[0]
-				Exec = BeginCall.MethodByName("Exec")
-			}
-			call := Exec.CallSlice([]reflect.Value{
-				reflect.ValueOf(templateSql),
-				reflect.ValueOf(params),
-			})
-			if !call[1].IsZero() {
-				errType = call[1]
-				goto end
-			}
-			var count int64
-			count, err = ExecResultMapper(result, call[0].Interface().(sql.Result))
-			if err != nil {
-				errType.Set(reflect.ValueOf(err))
-				goto end
-			}
-			end := time.Now()
-			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
 		}
 	end:
-		outEnd := result[len(result)-1]
-		if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
-			outEnd.Set(errType)
-			if aout {
-				RollbackFunc := BeginCall.MethodByName("Rollback")
-				Rollback := RollbackFunc.Call(nil)
-				if !Rollback[0].IsZero() {
-					outEnd.Set(Rollback[0])
-				}
-			}
-		} else if BeginCall != (reflect.Value{}) {
-			CommitFunc := BeginCall.MethodByName("Commit")
-			Commit := CommitFunc.Call(nil)
-			if !Commit[0].IsZero() {
-				outEnd.Set(Commit[0])
+		End(auto, result, errType, BeginCall)
+		return result
+	}
+}
+
+// Args 参数赋值处理
+// 处理定义函数的入参，返回一个参数序列给到后面的函数调用入参
+func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value) {
+	length := len(values)
+	if length == 1 {
+		args = values[0].Interface()
+	} else if length == 2 {
+
+	}
+	return
+}
+
+// SelectStatement 执行查询
+func SelectStatement(db reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+	var resultType reflect.Value
+	star := time.Now()
+	Query := db.MethodByName("Query")
+	call := Query.CallSlice([]reflect.Value{
+		reflect.ValueOf(templateSql),
+		reflect.ValueOf(params),
+	})
+	if !call[1].IsZero() {
+		return call[1]
+	}
+	if result[0].Kind() == reflect.Slice {
+		resultType = reflect.New(result[0].Type().Elem()).Elem()
+	} else {
+		resultType = result[0]
+	}
+	value, err := resultMapping(call[0], resultType.Interface())
+	if !err.IsZero() {
+		return err
+	}
+	QueryResultMapper(value, result)
+	end := time.Now()
+	Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
+	return err
+}
+
+// ExecStatement 执行修改
+func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements, templateSql string, params []any, values, result []reflect.Value) (reflect.Value, bool) {
+	auto := true
+	star := time.Now()
+	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
+	length := len(values)
+	if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
+		db.Set(values[length-1])
+		Exec = db.MethodByName("Exec")
+		auto = false
+	} else {
+		BeginFunc := db.MethodByName("Begin")
+		call := BeginFunc.Call(nil)
+		if !call[1].IsZero() {
+			return call[1], auto
+		}
+		*BeginCall = call[0]
+		Exec = BeginCall.MethodByName("Exec")
+	}
+	call := Exec.CallSlice([]reflect.Value{
+		reflect.ValueOf(templateSql),
+		reflect.ValueOf(params),
+	})
+	if !call[1].IsZero() {
+		return call[1], auto
+	}
+	var count int64
+	count, err := ExecResultMapper(result, call[0].Interface().(sql.Result))
+	if err != nil {
+		errType.Set(reflect.ValueOf(err))
+		return errType, auto
+	}
+	end := time.Now()
+	Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
+	return errType, auto
+}
+
+// End 错误提交及回滚
+func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
+	length := len(result)
+	outEnd := (result)[length-1]
+	if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
+		outEnd.Set(errType)
+		if auto {
+			RollbackFunc := BeginCall.MethodByName("Rollback")
+			Rollback := RollbackFunc.Call(nil)
+			if !Rollback[0].IsZero() {
+				outEnd.Set(Rollback[0])
 			}
 		}
-		return result
+	} else if BeginCall != (reflect.Value{}) {
+		CommitFunc := BeginCall.MethodByName("Commit")
+		Commit := CommitFunc.Call(nil)
+		if !Commit[0].IsZero() {
+			outEnd.Set(Commit[0])
+		}
 	}
 }
 
