@@ -34,83 +34,14 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 			if errType = err; !errType.IsZero() {
 				goto end
 			}
-			/*Query = db.MethodByName("Query")
-			call := Query.CallSlice([]reflect.Value{
-				reflect.ValueOf(templateSql),
-				reflect.ValueOf(params),
-			})
-			if !call[1].IsZero() {
-				errType = call[1]
-				goto end
-			}
-
-			if result[0].Kind() == reflect.Slice {
-				resultType = reflect.New(result[0].Type().Elem()).Elem()
-			} else {
-				resultType = result[0]
-			}
-			value, errType = resultMapping(call[0], resultType.Interface())
-			if !errType.IsZero() {
-				goto end
-			}
-			QueryResultMapper(value, result)
-			end := time.Now()
-			Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())*/
 		case Insert, Update, Delete:
 			errType, auto = ExecStatement(db, Exec, &BeginCall, statements, templateSql, params, values, result)
 			if !errType.IsZero() {
 				goto end
 			}
-			/*if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
-				db.Set(values[length-1])
-				Exec = db.MethodByName("Exec")
-				auto = false
-			} else {
-				BeginFunc := db.MethodByName("Begin")
-				call := BeginFunc.Call(nil)
-				if !call[1].IsZero() {
-					errType = call[1]
-					goto end
-				}
-				BeginCall = call[0]
-				Exec = BeginCall.MethodByName("Exec")
-			}
-			call := Exec.CallSlice([]reflect.Value{
-				reflect.ValueOf(templateSql),
-				reflect.ValueOf(params),
-			})
-			if !call[1].IsZero() {
-				errType = call[1]
-				goto end
-			}
-			var count int64
-			count, err = ExecResultMapper(result, call[0].Interface().(sql.Result))
-			if err != nil {
-				errType.Set(reflect.ValueOf(err))
-				goto end
-			}
-			end := time.Now()
-			Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())*/
 		}
 	end:
 		End(auto, result, errType, BeginCall)
-		/*outEnd := result[len(result)-1]
-		if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
-			outEnd.Set(errType)
-			if auto {
-				RollbackFunc := BeginCall.MethodByName("Rollback")
-				Rollback := RollbackFunc.Call(nil)
-				if !Rollback[0].IsZero() {
-					outEnd.Set(Rollback[0])
-				}
-			}
-		} else if BeginCall != (reflect.Value{}) {
-			CommitFunc := BeginCall.MethodByName("Commit")
-			Commit := CommitFunc.Call(nil)
-			if !Commit[0].IsZero() {
-				outEnd.Set(Commit[0])
-			}
-		}*/
 		return result
 	}
 }
