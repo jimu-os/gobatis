@@ -1,9 +1,11 @@
 package sgo
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/iancoleman/strcase"
 	"reflect"
 	"time"
 )
@@ -12,36 +14,35 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
 func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
+
 	return func(values []reflect.Value) []reflect.Value {
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
 		auto := true
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := build.db
-		length := len(values)
-		if length >= 1 {
-			ctx = values[0].Interface()
-		}
+		c, ctx, db := Args(db, values)
+		results := Return(result)
 		statements, tag, templateSql, params, err := build.Get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
-			result[len(result)-1] = errType
+			results[len(results)-1] = errType
 			return result
 		}
 		switch tag {
 		case Select:
-			err := SelectStatement(db, statements, templateSql, params, result)
+			err := SelectStatement(db, c, statements, templateSql, params, results)
 			if errType = err; !errType.IsZero() {
 				goto end
 			}
 		case Insert, Update, Delete:
-			errType, auto = ExecStatement(db, Exec, &BeginCall, statements, templateSql, params, values, result)
+			errType, auto = ExecStatement(db, c, Exec, &BeginCall, statements, templateSql, params, values, results)
 			if !errType.IsZero() {
 				goto end
 			}
 		}
 	end:
-		End(auto, result, errType, BeginCall)
+		End(auto, results, errType, BeginCall)
 		return result
 	}
 }
@@ -49,21 +50,55 @@ func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
 // Args 参数赋值处理
 // 处理定义函数的入参，返回一个参数序列给到后面的函数调用入参
 func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value) {
+	params := make(map[string]any)
+	tx = db
+	ctx = reflect.ValueOf(context.Background())
+	ctxType := reflect.TypeOf(new(context.Context)).Elem()
+	txType := reflect.TypeOf(&sql.Tx{})
 	length := len(values)
-	if length == 1 {
-		args = values[0].Interface()
-	} else if length == 2 {
-
+	for i := 0; i < length; i++ {
+		arg := values[i]
+		argType := arg.Type()
+		if argType.AssignableTo(ctxType) {
+			ctx = arg
+			continue
+		}
+		if argType.AssignableTo(txType) {
+			tx = arg
+			continue
+		}
+		args = arg.Interface()
+		m := toMap(args)
+		mergeMap(params, m)
 	}
+	args = params
+	return
+}
+
+// Return 处理返回值排序
+func Return(result []reflect.Value) (ret []reflect.Value) {
+	var err reflect.Value
+	errType := reflect.TypeOf(new(error)).Elem()
+	for i := 0; i < len(result); i++ {
+		r := result[i]
+		rType := r.Type()
+		if rType.AssignableTo(errType) {
+			err = r
+			continue
+		}
+		ret = append(ret, r)
+	}
+	ret = append(ret, err)
 	return
 }
 
 // SelectStatement 执行查询
-func SelectStatement(db reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func SelectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
-	Query := db.MethodByName("Query")
+	Query := db.MethodByName("QueryContext")
 	call := Query.CallSlice([]reflect.Value{
+		ctx,
 		reflect.ValueOf(templateSql),
 		reflect.ValueOf(params),
 	})
@@ -86,14 +121,14 @@ func SelectStatement(db reflect.Value, statements, templateSql string, params []
 }
 
 // ExecStatement 执行修改
-func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements, templateSql string, params []any, values, result []reflect.Value) (reflect.Value, bool) {
+func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, statements, templateSql string, params []any, values, result []reflect.Value) (reflect.Value, bool) {
 	auto := true
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	length := len(values)
 	if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
 		db.Set(values[length-1])
-		Exec = db.MethodByName("Exec")
+		Exec = db.MethodByName("ExecContext")
 		auto = false
 	} else {
 		BeginFunc := db.MethodByName("Begin")
@@ -102,9 +137,10 @@ func ExecStatement(db, Exec reflect.Value, BeginCall *reflect.Value, statements,
 			return call[1], auto
 		}
 		*BeginCall = call[0]
-		Exec = BeginCall.MethodByName("Exec")
+		Exec = BeginCall.MethodByName("ExecContext")
 	}
 	call := Exec.CallSlice([]reflect.Value{
+		ctx,
 		reflect.ValueOf(templateSql),
 		reflect.ValueOf(params),
 	})
@@ -339,7 +375,7 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			mapp[field.Name] = field.Name
+			mapp[field.Name] = strcase.ToKebab(field.Name)
 			if get := field.Tag.Get("column"); get != "" {
 				mapp[get] = field.Name
 			}

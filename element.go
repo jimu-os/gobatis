@@ -153,7 +153,11 @@ func structToMap(value reflect.Value, ctx map[string]any) {
 		if !value.Type().Field(i).IsExported() {
 			continue
 		}
-		key := value.Type().Field(i).Name
+		FiledType := value.Type().Field(i)
+		key := FiledType.Name
+		if tag, b := FiledType.Tag.Lookup("name"); b && tag != "" {
+			key = tag
+		}
 		key = strings.ToLower(key)
 		v := field.Interface()
 		if dataType(key, v, ctx) {
@@ -360,7 +364,7 @@ func ctxValue(ctx map[string]any, keys []string) (any, error) {
 	return v, nil
 }
 
-// 上下文中取数据
+// for迭代 上下文中取数据
 func sliceCtxValue(ctx map[string]any, keys []string) (any, error) {
 	if ctx == nil {
 		return nil, errors.New("ctx is nil")
@@ -385,4 +389,11 @@ func sliceCtxValue(ctx map[string]any, keys []string) (any, error) {
 		}
 	}
 	return v, nil
+}
+
+// 合并 map 吧 src 下的内容合并到 target 下，同名的 属性将被覆盖
+func mergeMap(target, src map[string]any) {
+	for k, v := range src {
+		target[k] = v
+	}
 }

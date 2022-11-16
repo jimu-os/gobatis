@@ -39,7 +39,7 @@ type StudentMapper struct {
 	InsertOne func(any) (int64, error)
 	InsertArr func(any) (int64, int64, error)
 
-	SelectById  func(any) (Student, error)
+	SelectById  func(any) (error, Student)
 	SelectAll   func() ([]Student, error)
 	SelectByIds func(any) ([]Student, error)
 }
@@ -69,19 +69,20 @@ func main() {
 		"id":  "1",
 		"ids": []string{"1", "2"},
 	}
-	open, err := sql.Open("mysql", "root:Aurora@2022@(82.157.160.117:3306)/community")
+	open, err := sql.Open("mysql", "xxx")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
+
 	build := sgo.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
-	count, lid, err := mapper.InsertArr(ctx)
+	err, count := mapper.SelectById(ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Println(count, lid)
+	fmt.Println(count)
 }

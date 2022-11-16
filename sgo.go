@@ -231,29 +231,29 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 		}
 	}
 
-	if fun.Type().NumIn() == 1 {
-		Tx := reflect.TypeOf(&sql.Tx{})
-		if fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
-			return false, errors.New("an incoming parameter can only pass context parameters")
-		}
-	}
+	//if fun.Type().NumIn() == 1 {
+	//	Tx := reflect.TypeOf(&sql.Tx{})
+	//	if fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
+	//		return false, errors.New("an incoming parameter can only pass context parameters")
+	//	}
+	//}
 
 	// 入参大于1个的时候，最后一个参数只能是 *sql.Tx,通过传递的 事务需要自己保证可用
-	if fun.Type().NumIn() > 1 {
-		Tx := reflect.TypeOf(&sql.Tx{})
-		if !fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
-			return false, errors.New("the last entry is of the wrong type and requires *sql.Tx")
-		}
-	}
+	//if fun.Type().NumIn() > 1 {
+	//	Tx := reflect.TypeOf(&sql.Tx{})
+	//	if !fun.Type().In(fun.Type().NumIn() - 1).AssignableTo(Tx) {
+	//		return false, errors.New("the last entry is of the wrong type and requires *sql.Tx")
+	//	}
+	//}
 
 	// 多个参数接收时候，最后一个返回值只能是 error
-	if fun.Type().NumOut() > 1 {
-		// 校验最后一个参数必须是 error
-		err := fun.Type().Out(fun.Type().NumOut() - 1)
-		if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
-			return false, errors.New("the second return value must be error")
-		}
-	}
+	//if fun.Type().NumOut() > 1 {
+	//	// 校验最后一个参数必须是 error
+	//	err := fun.Type().Out(fun.Type().NumOut() - 1)
+	//	if !err.Implements(reflect.TypeOf(new(error)).Elem()) {
+	//		return false, errors.New("the second return value must be error")
+	//	}
+	//}
 
 	return true, nil
 }
