@@ -10,28 +10,34 @@ import (
 // 加载 基础类型解析支持
 // 泛型的基础类型解析需要手动导入 key 格式为:  包全名-类型字符串
 func init() {
-	BaseType = map[string]DataType{
+	databaseToGolang = map[string]ToGolang{
 		TypeKey(time.Time{}):  TimeData,
 		TypeKey(&time.Time{}): TimeDataPointer,
 	}
+
+	golangToDatabase = map[string]ToDatabase{}
 }
 
 // DataType 函数定义反射赋值逻辑
 // value : 是在一个结构体内的字段反射，通过该函数可以对这个字段进行初始化赋值
 // data  : 是value对应的具体参数值，可能是字符串，切片，map
-type DataType func(value reflect.Value, data any) error
+type ToGolang func(value reflect.Value, data any) error
 
-// BaseType 存储了请求参数解析过程中对结构体内部字段类型的自定义支持，添加到 Type 中的类型在 控制器参数校验时候会自动跳过
+// databaseToGolang  定义了 查询结果集对应的 golang 数据映射匹配器
 // key : 通过对类型的反射取到的类型名称
 // value : 定义了对应该类型的解析逻辑
-var BaseType map[string]DataType
+var databaseToGolang map[string]ToGolang
+
+type ToDatabase func(data any) any
+
+var golangToDatabase map[string]ToDatabase
 
 // ValueType 对外提供添加 自定义数据类型解析支持
 // key 需要通过 TypeKey 函数获取一个全局唯一的标识符
 // dataType 需要提供 对应数据解析逻辑细节可以参考 AuroraQueuePointerType 或者 AuroraStackPointerType
-func ValueType(key string, dataType DataType) {
-	if _, b := BaseType[key]; !b {
-		BaseType[key] = dataType
+func ValueType(key string, dataType ToGolang) {
+	if _, b := databaseToGolang[key]; !b {
+		databaseToGolang[key] = dataType
 	}
 }
 

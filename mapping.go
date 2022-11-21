@@ -344,7 +344,7 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 		// 拿到 特殊结构体对应的 值
 		mapV := values[k]
 		key := BaseTypeKey(v)
-		err := BaseType[key](v, mapV.Elem().Interface())
+		err := databaseToGolang[key](v, mapV.Elem().Interface())
 		if err != nil {
 			Panic(err)
 		}

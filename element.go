@@ -7,6 +7,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -246,7 +247,7 @@ func dataType(key string, value any, ctx map[string]any) bool {
 
 // 模板解析处理复杂数据类型
 func dataHandle(value any) string {
-	// TODO
+	// TODO 处理复杂数据类型解析，更具数据解析器得到的数据
 	return ""
 }
 
@@ -309,22 +310,24 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 			}
 			switch value.(type) {
 			case string:
-				buf.WriteString(fmt.Sprintf(" '%s' ", value.(string)))
+				buf.WriteString("'" + value.(string) + "'")
 				templateBuf.WriteString("?")
 				params = append(params, value)
 			case int:
-				buf.WriteString(fmt.Sprintf(" %d ", value.(int)))
+				itoa := strconv.Itoa(value.(int))
+				buf.WriteString(itoa)
 				templateBuf.WriteString("?")
 				params = append(params, value)
 			case float64:
-				buf.WriteString(fmt.Sprintf(" %f ", value.(float64)))
+				float := strconv.FormatFloat(value.(float64), 'f', 'g', 64)
+				buf.WriteString(float)
 				templateBuf.WriteString("?")
 				params = append(params, value)
 			default:
 				// 其他复杂数据类型
 				if handle := dataHandle(value); handle != "" {
-					buf.WriteString(" " + handle + " ")
-					templateBuf.WriteString(" " + handle + " ")
+					buf.WriteString(handle)
+					templateBuf.WriteString(handle)
 					params = append(params, handle)
 				}
 			}
