@@ -32,12 +32,18 @@ type ToDatabase func(data any) any
 
 var golangToDatabase map[string]ToDatabase
 
-// ValueType 对外提供添加 自定义数据类型解析支持
+// GolangType 对外提供添加 自定义数据类型解析支持
 // key 需要通过 TypeKey 函数获取一个全局唯一的标识符
 // dataType 需要提供 对应数据解析逻辑细节可以参考 AuroraQueuePointerType 或者 AuroraStackPointerType
-func ValueType(key string, dataType ToGolang) {
+func GolangType(key string, dataType ToGolang) {
 	if _, b := databaseToGolang[key]; !b {
 		databaseToGolang[key] = dataType
+	}
+}
+
+func DatabaseType(key string, dataType ToDatabase) {
+	if _, b := golangToDatabase[key]; !b {
+		golangToDatabase[key] = dataType
 	}
 }
 
