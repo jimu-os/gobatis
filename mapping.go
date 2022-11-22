@@ -375,7 +375,7 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			mapp[field.Name] = strcase.ToKebab(field.Name)
+			mapp[field.Name] = strcase.ToSnake(field.Name)
 			if get := field.Tag.Get("column"); get != "" {
 				mapp[get] = field.Name
 			}
