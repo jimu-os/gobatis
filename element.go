@@ -161,7 +161,7 @@ func structToMap(value reflect.Value, ctx map[string]any) {
 		}
 		key = strings.ToLower(key)
 		v := field.Interface()
-		if dataType(key, v, ctx) {
+		if dataType(v) {
 			continue
 		}
 		if field.Kind() == reflect.Slice {
@@ -190,7 +190,7 @@ func mapToMap(value reflect.Value, ctx map[string]any) {
 				v = toMap(v)
 			}
 		}
-		if dataType(key, v, ctx) {
+		if dataType(v) {
 			continue
 		}
 		if vOf.Kind() == reflect.Slice {
@@ -240,16 +240,25 @@ func filedToMap(value any) []map[string]any {
 }
 
 // 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理，如果是复杂数据类型，应该直接添加到ctx，并返回true
-func dataType(key string, value any, ctx map[string]any) bool {
+func dataType(value any) bool {
 	// TODO
+	typeKey := TypeKey(value)
+	if _, b := golangToDatabase[typeKey]; b {
+		return b
+	}
 	return false
 }
 
 // 模板解析处理复杂数据类型
-func dataHandle(value any) string {
+func dataHandle(value any) (any, error) {
 	// TODO 处理复杂数据类型解析，更具数据解析器得到的数据
-
-	return ""
+	key := TypeKey(value)
+	database := golangToDatabase[key]
+	result, err := database(value)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 // UnTemplate 解析 {xx} 模板 解析为三个部分 ["{","xx","}"]
@@ -326,9 +335,22 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 				params = append(params, value)
 			default:
 				// 其他复杂数据类型
-				if handle := dataHandle(value); handle != "" {
-					buf.WriteString(handle)
-					templateBuf.WriteString(handle)
+				if handle, e := dataHandle(value); e != nil {
+					return "", "", nil, e
+				} else {
+					var v string
+					switch handle.(type) {
+					case string:
+						v = "'" + handle.(string) + "'"
+					case int:
+						v = strconv.Itoa(handle.(int))
+					case float64:
+						v = strconv.FormatFloat(handle.(float64), 'f', 'f', 64)
+					case bool:
+						v = strconv.FormatBool(handle.(bool))
+					}
+					buf.WriteString(v)
+					templateBuf.WriteString("?")
 					params = append(params, handle)
 				}
 			}

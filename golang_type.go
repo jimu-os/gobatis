@@ -26,7 +26,7 @@ var databaseToGolang map[string]ToGolang
 
 // GolangType 对外提供添加 自定义结果集数据类型解析支持
 // key 需要通过 TypeKey 函数获取一个全局唯一的标识符
-// dataType 需要提供 对应数据解析逻辑细节可以参考 AuroraQueuePointerType 或者 AuroraStackPointerType
+// dataType 需要提供 对应数据解析逻辑细节可以参考 TimeData 或者 TimeDataPointer
 func GolangType(key string, dataType ToGolang) {
 	if _, b := databaseToGolang[key]; !b {
 		databaseToGolang[key] = dataType

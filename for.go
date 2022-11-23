@@ -3,6 +3,7 @@ package sgo
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -73,8 +74,21 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 				params = append(params, item)
 			default:
 				// 其他复杂数据类型
-				if handle := dataHandle(item); handle != "" {
-					buf.WriteString(" " + handle + " ")
+				if handle, e := dataHandle(item); e != nil {
+					return "", "", nil, e
+				} else {
+					var v string
+					switch handle.(type) {
+					case string:
+						v = "'" + handle.(string) + "'"
+					case int:
+						v = strconv.Itoa(handle.(int))
+					case float64:
+						v = strconv.FormatFloat(handle.(float64), 'f', 'f', 64)
+					case bool:
+						v = strconv.FormatBool(handle.(bool))
+					}
+					buf.WriteString(v)
 					templateBuf.WriteString("?")
 					params = append(params, handle)
 				}

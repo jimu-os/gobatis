@@ -37,7 +37,7 @@ type Student struct {
 
 type StudentMapper struct {
 	InsertOne func(any) (int64, error)
-	InsertArr func(any) (int64, int64, error)
+	InsertArr func(any) (int64, error)
 
 	SelectById  func(any) (error, Student)
 	SelectAll   func() ([]Student, error)
@@ -45,31 +45,20 @@ type StudentMapper struct {
 }
 
 func main() {
+	now := time.Now()
 	ctx := map[string]any{
 		"arr": []map[string]any{
 			{
-				"id":   "4",
-				"name": "test1",
-				"age":  19,
-				"time": time.Now().Format("2006-01-02 15:04:05"),
-			},
-			{
-				"id":   "5",
-				"name": "test2",
-				"age":  19,
-				"time": time.Now().Format("2006-01-02 15:04:05"),
-			},
-			{
-				"id":   "6",
-				"name": "test3",
-				"age":  19,
-				"time": time.Now().Format("2006-01-02 15:04:05"),
+				"id":   "22",
+				"name": "test22",
+				"age":  22,
+				"time": &now,
 			},
 		},
 		"id":  "1",
-		"ids": []string{"1", "2"},
+		"ids": []string{"1", "2", "3", "4", "5", "6"},
 	}
-	open, err := sql.Open("mysql", "root:Aurora@2022@(82.157.160.117:3306)/community")
+	open, err := sql.Open("mysql", "xxxx")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
@@ -79,7 +68,7 @@ func main() {
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
-	err, count := mapper.SelectById(ctx)
+	count, err := mapper.InsertArr(ctx)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
