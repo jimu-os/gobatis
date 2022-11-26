@@ -13,9 +13,10 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *Build) mapper(id []string, result []reflect.Value) MapperFunc {
-
+func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
+		result := make([]reflect.Value, len(returns))
+		copy(result, returns)
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
 		auto := true
