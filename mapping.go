@@ -107,7 +107,23 @@ func SelectStatement(db, ctx reflect.Value, statements, templateSql string, para
 		return call[1]
 	}
 	if result[0].Kind() == reflect.Slice {
-		resultType = reflect.New(result[0].Type().Elem()).Elem()
+		// 拿到 切片元素类型
+		sliceType := result[0].Type().Elem()
+		switch sliceType.Kind() {
+		case reflect.Pointer:
+			resultType = reflect.New(sliceType).Elem()
+			elem := reflect.New(sliceType.Elem())
+			resultType.Set(elem)
+		case reflect.Struct:
+			resultType = reflect.New(sliceType).Elem()
+		}
+		//fmt.Println(sliceType.String())
+		//resultType = reflect.New(sliceType).Elem()
+		//if resultType.Kind() == reflect.Pointer {
+		//	fmt.Println(resultType.Type().String())
+		//	elem := reflect.New(resultType.Type().Elem()).Elem()
+		//	resultType.Set(elem)
+		//}
 	} else {
 		resultType = result[0]
 	}
@@ -187,13 +203,20 @@ func (build *Build) initMapper(id []string, fun reflect.Value) {
 	var outValue reflect.Value
 	for i := 0; i < numOut; i++ {
 		out := fun.Type().Out(i)
-		outValue = reflect.New(out).Elem()
-		if out.Kind() == reflect.Pointer {
+		switch out.Kind() {
+		case reflect.Pointer:
+			outValue = reflect.New(out).Elem()
 			elem := reflect.New(out.Elem())
 			if outValue.CanSet() {
 				outValue.Set(elem)
 				initField(outValue)
 			}
+		case reflect.Slice:
+			slice := reflect.MakeSlice(out, 0, 0)
+			outValue = reflect.New(out).Elem()
+			outValue.Set(slice)
+		default:
+			outValue = reflect.New(out).Elem()
 		}
 		initField(outValue)
 		values = append(values, outValue)
@@ -376,7 +399,7 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			mapp[field.Name] = strcase.ToSnake(field.Name)
+			mapp[strcase.ToSnake(field.Name)] = field.Name
 			if get := field.Tag.Get("column"); get != "" {
 				mapp[get] = field.Name
 			}
