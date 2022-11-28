@@ -117,13 +117,6 @@ func SelectStatement(db, ctx reflect.Value, statements, templateSql string, para
 		case reflect.Struct:
 			resultType = reflect.New(sliceType).Elem()
 		}
-		//fmt.Println(sliceType.String())
-		//resultType = reflect.New(sliceType).Elem()
-		//if resultType.Kind() == reflect.Pointer {
-		//	fmt.Println(resultType.Type().String())
-		//	elem := reflect.New(resultType.Type().Elem()).Elem()
-		//	resultType.Set(elem)
-		//}
 	} else {
 		resultType = result[0]
 	}
@@ -334,7 +327,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		byName := value.FieldByName(name)
 		if byName == (reflect.Value{}) {
 			// 没有找到对应的
-			panic("The type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
+			panic("The '" + column + "' of the result set does not match the structure '" + value.Type().String() + "',the type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
 		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
