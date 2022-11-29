@@ -239,9 +239,9 @@ func filedToMap(value any) []map[string]any {
 	return arr
 }
 
+// dataType 校验 map 转化，注册了 DatabaseType 的数据 将跳过数据的转化，保留原始类型
 // 校验复杂数据类型，不是复杂数据类型返回 false 让主程序继续处理，如果是复杂数据类型，应该直接添加到ctx，并返回true
 func dataType(value any) bool {
-	// TODO
 	typeKey := TypeKey(value)
 	if _, b := golangToDatabase[typeKey]; b {
 		return b

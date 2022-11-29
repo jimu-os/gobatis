@@ -425,6 +425,8 @@ func SelectCheck(columns []string, resultType any) (bool, error) {
 }
 
 // QueryResultMapper SQL 查询结果赋值
+// value 对应查询结果集
+// result 对应mapper函数返回值
 func QueryResultMapper(value reflect.Value, result []reflect.Value) {
 	var itemT reflect.Type
 	var itemV reflect.Value
@@ -432,13 +434,17 @@ func QueryResultMapper(value reflect.Value, result []reflect.Value) {
 	if value.Len() == 0 {
 		return
 	}
+	// 拿到 结果集切片内部存储的数据类型
 	itemT = value.Type().Elem()
+	// 默认取所有结果集中的第一个参数，以变单条数据查询赋值
 	itemV = value.Index(0)
 	for i := 0; i < length-1; i++ {
 		out := result[i]
 		if value.Type().AssignableTo(out.Type()) {
+			// 校验 切片是否可以赋值给 返回值
 			out.Set(value)
 		} else if itemT.AssignableTo(out.Type()) {
+			// 校验 切片第一个参数是否可以赋值给 返回值
 			out.Set(itemV)
 		}
 	}
