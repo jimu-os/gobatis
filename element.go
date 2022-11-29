@@ -46,8 +46,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	if attr = element.SelectAttr("close"); attr != nil {
 		closes = attr.Value
 	}
-	attr = element.SelectAttr("separator")
-	if element.SelectAttr("separator"); attr != nil {
+	if attr = element.SelectAttr("separator"); attr != nil {
 		separator = attr.Value
 	}
 	if column != "" {
@@ -57,6 +56,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	// 上下文中取出 数据
 	t := UnTemplate(slice)
 	keys := strings.Split(t[1], ".")
+	// 上下文参数中找到 keys 的值 v 可能是 切片 数组，也可能是自定义的 List 数据类型等
 	v, err := ctxValue(ctx, keys)
 	if err != nil {
 		return "", "", nil, err
@@ -73,10 +73,8 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	switch valueOf.Kind() {
 	case reflect.Slice, reflect.Array:
 		combine.Politic = Slice{}
-	case reflect.Struct:
-		combine.Politic = Struct{}
 	case reflect.Pointer:
-		combine.Politic = Pointer{}
+		combine.Politic = Other{}
 	}
 	result, temp, param, err = combine.ForEach()
 	if err != nil {

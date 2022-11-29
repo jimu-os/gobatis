@@ -108,10 +108,14 @@ func SelectStatement(db, ctx reflect.Value, statements, templateSql string, para
 	if result[0].Kind() == reflect.Slice {
 		// 拿到 切片元素类型
 		sliceType := result[0].Type().Elem()
+		// 切片是没有具体元素，所以需要创建一个具体的元素
 		switch sliceType.Kind() {
 		case reflect.Pointer:
+			// 创建 指针
 			resultType = reflect.New(sliceType).Elem()
+			// 创建 指针 *
 			elem := reflect.New(sliceType.Elem())
+			// 给指针 设置一个对应的指针值
 			resultType.Set(elem)
 		case reflect.Struct:
 			resultType = reflect.New(sliceType).Elem()

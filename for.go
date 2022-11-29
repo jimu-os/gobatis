@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Politic for 标签迭代实现接口扩展 标准切片之外的 List 数据支持
 type Politic interface {
 	// ForEach value 待处理迭代的数据 ctx 上下文数据 item 上下文数据key序列
 	ForEach(value any, template string, separator string) (string, string, []any, error)
