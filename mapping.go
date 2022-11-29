@@ -331,16 +331,15 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
-		field := byName.Interface()
-		switch field.(type) {
-		case time.Time:
+		switch byName.Kind() {
+		case reflect.Struct:
 			// 记录特殊 值的索引 并且替换掉
 			index := len(values)
 			fieldIndexMap[index] = byName.Addr()
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
-		case *time.Time:
+		case reflect.Pointer:
 			// 记录特殊 值的索引 并且替换掉
 			index := len(values)
 			fieldIndexMap[index] = byName
