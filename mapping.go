@@ -324,30 +324,30 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		// 通过结构体映射找到 数据库映射到结构体的字段名
 		name := resultColumn[column]
 		// 找到对应的字段
-		byName := value.FieldByName(name)
-		if byName == (reflect.Value{}) {
+		Field := value.FieldByName(name)
+		if Field == (reflect.Value{}) {
 			// 没有找到对应的
 			panic("The '" + column + "' of the result set does not match the structure '" + value.Type().String() + "',the type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
 		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
-		switch byName.Kind() {
+		switch Field.Kind() {
 		case reflect.Struct:
-			// 记录特殊 值的索引 并且替换掉
-			index := len(values)
-			fieldIndexMap[index] = byName.Addr()
+			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
+			indexV := len(values)
+			fieldIndexMap[indexV] = Field.Addr()
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
 		case reflect.Pointer:
-			// 记录特殊 值的索引 并且替换掉
-			index := len(values)
-			fieldIndexMap[index] = byName
+			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉 ，将会在 scanWrite 方法中执行替换数据
+			indexV := len(values)
+			fieldIndexMap[indexV] = Field
 			// 替换 使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
 		}
-		values = append(values, byName.Addr())
+		values = append(values, Field.Addr())
 	}
 	return values, fieldIndexMap, MapKey
 }
@@ -355,18 +355,26 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 // 对 buildScan 函数构建阶段存在特殊字段的处理 进行回写到指定的结构体位置
 // values 数据结果集 一行记录
 func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
+	var fun ToGolang
+	var b bool
 	// 迭代是否有特殊结构体 主要对 时间类型做了处理
 	for k, v := range fieldIndexMap {
 		// 拿到 特殊结构体对应的 值
 		mapV := values[k]
 		key := BaseTypeKey(v)
-		err := databaseToGolang[key](v, mapV.Elem().Interface())
+		if fun, b = databaseToGolang[key]; b {
+			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
+			// 没有找到对应的数据处理，可以通过 sgo.GolangType 方法对 具体类型进行注册
+			Panic("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")
+		}
+		err := fun(v, mapV.Elem().Interface())
 		if err != nil {
 			Panic(err)
 		}
 	}
 }
 
+// scanMap select 查询返回的结果集是 map 的处理方式
 func scanMap(value reflect.Value, values []reflect.Value, MapKey map[int]string) {
 	if len(MapKey) > 0 {
 		for i := 0; i < len(values); i++ {
