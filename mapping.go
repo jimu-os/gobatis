@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/iancoleman/strcase"
 	"reflect"
 	"time"
@@ -235,7 +234,6 @@ func initField(value reflect.Value) {
 			if field.IsZero() {
 				if !field.Elem().CanSet() {
 					elem := reflect.New(field.Type()).Elem()
-					fmt.Println(elem.Type().String())
 					field.Set(elem)
 				}
 			}
@@ -271,7 +269,6 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 	// 拿到 scan 方法
 	scan := row.MethodByName("Scan")
 	next := row.MethodByName("Next")
-
 	mapping := ResultMapping(resultType)
 	for (next.Call(nil))[0].Interface().(bool) {
 		var value, unValue reflect.Value
@@ -279,6 +276,8 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 			//创建一个 接收结果集的变量
 			value = reflect.New(reflect.TypeOf(resultType).Elem())
 			unValue = value.Elem()
+			// 初始化 内部指针
+			initField(unValue)
 		} else if reflect.TypeOf(resultType).Kind() == reflect.Map {
 			value = reflect.MakeMap(reflect.TypeOf(resultType))
 			unValue = value
@@ -286,6 +285,8 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 			value = reflect.New(reflect.TypeOf(resultType))
 			value = value.Elem()
 			unValue = value
+			// 初始化 内部指针
+			initField(unValue)
 		}
 		// 创建 接收器
 		values, fieldIndexMap, MapKey := buildScan(unValue, column, mapping)
@@ -335,7 +336,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		case reflect.Struct:
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
-			fieldIndexMap[indexV] = Field.Addr()
+			fieldIndexMap[indexV] = Field
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
@@ -362,7 +363,7 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 		// 拿到 特殊结构体对应的 值
 		mapV := values[k]
 		key := BaseTypeKey(v)
-		if fun, b = databaseToGolang[key]; b {
+		if fun, b = databaseToGolang[key]; !b {
 			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
 			// 没有找到对应的数据处理，可以通过 sgo.GolangType 方法对 具体类型进行注册
 			Panic("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")

@@ -50,6 +50,9 @@ func TimeDataPointer(value reflect.Value, data any) error {
 	if err != nil {
 		return err
 	}
-	value.Set(reflect.ValueOf(&parse))
+	if value.CanSet() {
+		value.Set(reflect.ValueOf(&parse))
+	}
+
 	return nil
 }
