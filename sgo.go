@@ -1,7 +1,9 @@
 package sgo
 
 import (
+	"bytes"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"github.com/beevik/etree"
@@ -37,35 +39,54 @@ type Build struct {
 	SqlSource string
 	// NameSpaces 保存了每个 xml 配置的根元素构建出来的 Sql 对象
 	NameSpaces map[string]*Sql
+	// mapper 文件加载
+	mapperFS embed.FS
 }
 
 func (build *Build) Source(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}
-	getwd, err := os.Getwd()
-	if err != nil {
-		return
-	}
-	root := filepath.Join(getwd, build.SqlSource)
+
 	fmt.Print(banner)
 	// 解析 xml
-	filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if strings.HasSuffix(path, ".xml") {
-			document := etree.NewDocument()
-			err = document.ReadFromFile(path)
-			if err != nil {
-				return err
-			}
-			element := document.Root()
-			attr := element.SelectAttr("namespace")
-			s := NewSql(element)
-			s.LoadSqlElement()
-			build.NameSpaces[attr.Value] = s
-			Info("load mapper file path:[" + path + "]")
+	if build.mapperFS == (embed.FS{}) && build.SqlSource != "" {
+		getwd, err := os.Getwd()
+		if err != nil {
+			return
 		}
-		return nil
-	})
+		root := filepath.Join(getwd, build.SqlSource)
+		filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
+			if strings.HasSuffix(path, ".xml") {
+				document := etree.NewDocument()
+				err = document.ReadFromFile(path)
+				if err != nil {
+					return err
+				}
+				element := document.Root()
+				attr := element.SelectAttr("namespace")
+				s := NewSql(element)
+				s.LoadSqlElement()
+				build.NameSpaces[attr.Value] = s
+				Info("load mapper file path:[" + path + "]")
+			}
+			return nil
+		})
+		return
+	}
+
+	if build.mapperFS != (embed.FS{}) {
+		dir, err := build.mapperFS.ReadDir(build.SqlSource)
+		if err != nil {
+			panic(err)
+		}
+		Walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
+	}
+
+}
+
+func (build *Build) Load(files embed.FS) {
+	build.mapperFS = files
 }
 
 // ScanMappers 扫描解析
@@ -229,4 +250,37 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+func Walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
+	for _, dirEntry := range list {
+		path := filepath.Join(root, dirEntry.Name())
+		path = filepath.ToSlash(path)
+		if dirEntry.IsDir() {
+			fmt.Println(dirEntry.Name())
+			dir, err := files.ReadDir(path)
+			if err != nil {
+				panic(err)
+			}
+			Walk(path, dir, files, NameSpaces)
+		}
+		if strings.HasSuffix(path, ".xml") {
+			b, err := files.ReadFile(path)
+			if err != nil {
+				panic(err)
+			}
+			buf := bytes.NewBuffer(b)
+			document := etree.NewDocument()
+			_, err = document.ReadFrom(buf)
+			if err != nil {
+				panic(err)
+			}
+			element := document.Root()
+			attr := element.SelectAttr("namespace")
+			s := NewSql(element)
+			s.LoadSqlElement()
+			NameSpaces[attr.Value] = s
+			Info("load mapper file path:[" + path + "]")
+		}
+	}
 }
