@@ -23,7 +23,7 @@ func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 		db := build.db
 		c, ctx, db := Args(db, values)
 		results := Return(result)
-		statements, tag, templateSql, params, err := build.Get(id, ctx)
+		statements, tag, templateSql, params, err := build.get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			results[len(results)-1] = errType

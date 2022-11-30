@@ -25,15 +25,12 @@ func New(db *sql.DB) *Build {
 		Panic(err)
 	}
 	return &Build{
-		DB:         db,
 		db:         reflect.ValueOf(db),
 		NameSpaces: map[string]*Sql{},
 	}
 }
 
 type Build struct {
-	// DB 用于执行 sql 语句
-	DB *sql.DB
 	db reflect.Value
 	// SqlSource 用于保存 xml 配置的文件的根路径配置信息，Build会通过SqlSource属性去加载 xml 文件
 	SqlSource string
@@ -43,11 +40,12 @@ type Build struct {
 	mapperFS embed.FS
 }
 
+// Source 加载 mapper文件
+// source 应当是项目中的 mapper 文件根路径文件夹名称
 func (build *Build) Source(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}
-
 	fmt.Print(banner)
 	// 解析 xml
 	if build.mapperFS == (embed.FS{}) && build.SqlSource != "" {
@@ -80,11 +78,12 @@ func (build *Build) Source(source string) {
 		if err != nil {
 			panic(err)
 		}
-		Walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
+		walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
 	}
 
 }
 
+// Load 加载 mapper 静态文件
 func (build *Build) Load(files embed.FS) {
 	build.mapperFS = files
 }
@@ -124,27 +123,27 @@ func (build *Build) ScanMappers(mappers ...any) {
 	}
 }
 
-func (build *Build) Sql(id string, value any) (string, string, []any, error) {
-	ids := strings.Split(id, ".")
-	if len(ids) != 2 {
-		return "", "", nil, errors.New("id error")
-	}
-	ctx := toMap(value)
-	if sql, b := build.NameSpaces[ids[0]]; b {
-		if element, f := sql.Statement[ids[1]]; f {
-			analysis, _, tempSql, params, err := Analysis(element, ctx)
-			if err != nil {
-				return "", "", nil, err
-			}
-			join := strings.Join(analysis, " ")
-			temp := strings.Join(tempSql, " ")
-			return join, temp, params, nil
-		}
-	}
-	return "", "", nil, nil
-}
+//func (build *Build) Sql(id string, value any) (string, string, []any, error) {
+//	ids := strings.Split(id, ".")
+//	if len(ids) != 2 {
+//		return "", "", nil, errors.New("id error")
+//	}
+//	ctx := toMap(value)
+//	if sql, b := build.NameSpaces[ids[0]]; b {
+//		if element, f := sql.Statement[ids[1]]; f {
+//			analysis, _, tempSql, params, err := Analysis(element, ctx)
+//			if err != nil {
+//				return "", "", nil, err
+//			}
+//			join := strings.Join(analysis, " ")
+//			temp := strings.Join(tempSql, " ")
+//			return join, temp, params, nil
+//		}
+//	}
+//	return "", "", nil, nil
+//}
 
-func (build *Build) Get(id []string, value any) (string, string, string, []any, error) {
+func (build *Build) get(id []string, value any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
 	}
@@ -252,7 +251,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	return true, nil
 }
 
-func Walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
+func walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
 	for _, dirEntry := range list {
 		path := filepath.Join(root, dirEntry.Name())
 		path = filepath.ToSlash(path)
@@ -262,7 +261,7 @@ func Walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string
 			if err != nil {
 				panic(err)
 			}
-			Walk(path, dir, files, NameSpaces)
+			walk(path, dir, files, NameSpaces)
 		}
 		if strings.HasSuffix(path, ".xml") {
 			b, err := files.ReadFile(path)
