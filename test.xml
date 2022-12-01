@@ -1,31 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE mapper SYSTEM "http://sgo.com">
 
-<mapper namespace="StudentMapper">
-    <insert id="InsertOne">
-        insert into student(id,name,age,create_time) value({id},{name},{age},{time})
-    </insert>
-
-    <insert id="InsertArr">
-        insert into student(id,name,age,create_time) values
-        <for slice="{arr}" item="obj">
-            ({obj.id},{obj.name},{obj.age},{obj.time})
-        </for>
-    </insert>
-
-    <select id="SelectById">
-        select * from student where id={id}
-    </select>
-
-    <select id="SelectAll">
-        select * from student
-    </select>
-
-    <select id="SelectByIds">
-        select * from student where id in
-        <for slice="{ids}" item="id" open="(" separator="," close=")">
-            {id}
-        </for>
-    </select>
+<mapper namespace="">
 
 </mapper>
