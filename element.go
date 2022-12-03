@@ -28,10 +28,10 @@ func IfElement(element *etree.Element, template string, ctx map[string]any) (str
 }
 
 func forElement(element *etree.Element, template string, ctx map[string]any) (string, string, []any, error) {
-	var slice, open, closes, column string
-	separator := ","
+	var slice, open, closes, column, keys string
 	var attr *etree.Attr
 	buf := bytes.Buffer{}
+	separator := ","
 	templateBuf := bytes.Buffer{}
 	params := make([]any, 0)
 	if attr = element.SelectAttr("column"); attr != nil {
@@ -54,10 +54,11 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 		templateBuf.WriteString(column + " IN ")
 	}
 	// 上下文中取出 数据
-	t := UnTemplate(slice)
-	keys := strings.Split(t[1], ".")
+
+	keys = UnTemplate(slice)
+	key := strings.Split(keys, ".")
 	// 上下文参数中找到 keys 的值 v 可能是 切片 数组，也可能是自定义的 List 数据类型等
-	v, err := ctxValue(ctx, keys)
+	v, err := ctxValue(ctx, key)
 	if err != nil {
 		return "", "", nil, err
 	}
@@ -73,7 +74,7 @@ func forElement(element *etree.Element, template string, ctx map[string]any) (st
 	switch valueOf.Kind() {
 	case reflect.Slice, reflect.Array:
 		combine.Politic = Slice{}
-	case reflect.Pointer:
+	default:
 		combine.Politic = Other{}
 	}
 	result, temp, param, err = combine.ForEach()
@@ -260,9 +261,11 @@ func dataHandle(value any) (any, error) {
 }
 
 // UnTemplate 解析 {xx} 模板 解析为三个部分 ["{","xx","}"]
-func UnTemplate(template string) []string {
-	length := len(template)
-	return []string{template[0:1], template[1 : length-1], template[length-1:]}
+func UnTemplate(template string) string {
+	if length := len(template); length > 3 && (template[0:1] == "{" && template[length-1:] == "}") {
+		return template[1 : length-1]
+	}
+	panic("Failed to resolve template format errors. Procedure")
 }
 
 // AnalysisExpr 翻译表达式
@@ -309,6 +312,9 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 					endIndex = j
 					break
 				}
+			}
+			if starIndex == endIndex {
+				panic(fmt.Sprintf("%s Template format error\n", template[:starIndex+1]))
 			}
 			s := template[starIndex+1 : endIndex]
 			split := strings.Split(s, ".")
@@ -366,6 +372,9 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 func ctxValue(ctx map[string]any, keys []string) (any, error) {
 	if ctx == nil {
 		return nil, errors.New("ctx is nil")
+	}
+	if keys == nil {
+		return nil, nil
 	}
 	kl := len(keys)
 	var v any
