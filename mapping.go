@@ -466,6 +466,12 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err
 	}()
 	var lid int64
 	length := len(result)
+	if length-1 == 0 {
+		count, err = exec.RowsAffected()
+		if err != nil {
+			return
+		}
+	}
 	for i := 0; i < length-1; i++ {
 		if i == 0 {
 			count, err = exec.RowsAffected()
