@@ -161,6 +161,7 @@ func structToMap(value reflect.Value, ctx map[string]any) {
 		key = strings.ToLower(key)
 		v := field.Interface()
 		if dataType(v) {
+			ctx[key] = v
 			continue
 		}
 		if field.Kind() == reflect.Slice {
@@ -179,6 +180,10 @@ func mapToMap(value reflect.Value, ctx map[string]any) {
 		key := mapIter.Key().Interface().(string)
 		vOf := mapIter.Value()
 		v := vOf.Interface()
+		if dataType(v) {
+			ctx[key] = v
+			continue
+		}
 		if vOf.Kind() == reflect.Interface {
 			if vOf.Elem().Kind() == reflect.Slice {
 				if vOf.Elem().Type().Elem().Kind() == reflect.Struct || vOf.Elem().Type().Elem().Kind() == reflect.Pointer || vOf.Elem().Type().Elem().Kind() == reflect.Map {
@@ -188,9 +193,6 @@ func mapToMap(value reflect.Value, ctx map[string]any) {
 			if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
 				v = toMap(v)
 			}
-		}
-		if dataType(v) {
-			continue
 		}
 		if vOf.Kind() == reflect.Slice {
 			v = filedToMap(v)

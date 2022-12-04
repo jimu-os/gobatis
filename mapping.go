@@ -18,15 +18,14 @@ func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 		copy(result, returns)
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
-		auto := true
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := build.db
-		c, ctx, db := Args(db, values)
+		c, ctx, db, auto := Args(db, values)
 		results := Return(result)
 		statements, tag, templateSql, params, err := build.get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
-			results[len(results)-1] = errType
+			results[len(results)-1].Set(errType)
 			return result
 		}
 		switch tag {
@@ -36,7 +35,7 @@ func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 				goto end
 			}
 		case Insert, Update, Delete:
-			errType, auto = ExecStatement(db, c, Exec, &BeginCall, statements, templateSql, params, values, results)
+			errType = ExecStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 			if !errType.IsZero() {
 				goto end
 			}
@@ -49,9 +48,11 @@ func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 
 // Args 参数赋值处理
 // 处理定义函数的入参，返回一个参数序列给到后面的函数调用入参
-func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value) {
+func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value, auto bool) {
 	params := make(map[string]any)
 	tx = db
+	// 是否启用自动提交事务
+	auto = true
 	ctx = reflect.ValueOf(context.Background())
 	ctxType := reflect.TypeOf(new(context.Context)).Elem()
 	txType := reflect.TypeOf(&sql.Tx{})
@@ -65,6 +66,8 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 		}
 		if argType.AssignableTo(txType) {
 			tx = arg
+			// 外部提供 事务，SGO 内部不自动提交
+			auto = false
 			continue
 		}
 		args = arg.Interface()
@@ -134,20 +137,16 @@ func SelectStatement(db, ctx reflect.Value, statements, templateSql string, para
 }
 
 // ExecStatement 执行修改
-func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, statements, templateSql string, params []any, values, result []reflect.Value) (reflect.Value, bool) {
-	auto := true
+func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
-	length := len(values)
-	if length > 1 && values[length-1].Type().AssignableTo(db.Type()) {
-		db.Set(values[length-1])
+	if !auto {
 		Exec = db.MethodByName("ExecContext")
-		auto = false
 	} else {
 		BeginFunc := db.MethodByName("Begin")
 		call := BeginFunc.Call(nil)
 		if !call[1].IsZero() {
-			return call[1], auto
+			return call[1]
 		}
 		*BeginCall = call[0]
 		Exec = BeginCall.MethodByName("ExecContext")
@@ -158,17 +157,17 @@ func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, statem
 		reflect.ValueOf(params),
 	})
 	if !call[1].IsZero() {
-		return call[1], auto
+		return call[1]
 	}
 	var count int64
 	count, err := ExecResultMapper(result, call[0].Interface().(sql.Result))
 	if err != nil {
 		errType.Set(reflect.ValueOf(err))
-		return errType, auto
+		return errType
 	}
 	end := time.Now()
 	Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
-	return errType, auto
+	return errType
 }
 
 // End 错误提交及回滚
@@ -184,7 +183,7 @@ func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 				outEnd.Set(Rollback[0])
 			}
 		}
-	} else if BeginCall != (reflect.Value{}) {
+	} else if BeginCall != (reflect.Value{}) && auto {
 		CommitFunc := BeginCall.MethodByName("Commit")
 		Commit := CommitFunc.Call(nil)
 		if !Commit[0].IsZero() {
