@@ -10,6 +10,15 @@ import (
 
 var logs *logrus.Logger
 
+// Log 自定义Log需要实现的借口
+type Log interface {
+	Info(...interface{})
+	Error(...interface{})
+	Debug(...interface{})
+	Panic(...interface{})
+	Warn(...interface{})
+}
+
 func init() {
 	logs = logrus.New()
 	f := &Formatter{ProjectName: "SGO"}

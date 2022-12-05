@@ -30,12 +30,12 @@ func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
 		}
 		switch tag {
 		case Select:
-			err := SelectStatement(db, c, statements, templateSql, params, results)
+			err := build.selectStatement(db, c, statements, templateSql, params, results)
 			if errType = err; !errType.IsZero() {
 				goto end
 			}
 		case Insert, Update, Delete:
-			errType = ExecStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
+			errType = build.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 			if !errType.IsZero() {
 				goto end
 			}
@@ -65,6 +65,10 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 			continue
 		}
 		if argType.AssignableTo(txType) {
+			if arg.IsZero() {
+				// 针对 txType 为空，我们不选择采用 外部提供的事务，主要方便支持一个定义灵活调用情况
+				continue
+			}
 			tx = arg
 			// 外部提供 事务，SGO 内部不自动提交
 			auto = false
@@ -96,7 +100,7 @@ func Return(result []reflect.Value) (ret []reflect.Value) {
 }
 
 // SelectStatement 执行查询
-func SelectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (build *Build) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
 	Query := db.MethodByName("QueryContext")
@@ -132,12 +136,12 @@ func SelectStatement(db, ctx reflect.Value, statements, templateSql string, para
 	}
 	QueryResultMapper(value, result)
 	end := time.Now()
-	Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
+	build.Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
 	return err
 }
 
 // ExecStatement 执行修改
-func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (build *Build) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if !auto {
@@ -166,7 +170,7 @@ func ExecStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto b
 		return errType
 	}
 	end := time.Now()
-	Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
+	build.Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
 	return errType
 }
 

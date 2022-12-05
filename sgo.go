@@ -27,10 +27,12 @@ func New(db *sql.DB) *Build {
 	return &Build{
 		db:         reflect.ValueOf(db),
 		NameSpaces: map[string]*Sql{},
+		Log:        logs,
 	}
 }
 
 type Build struct {
+	Log
 	db reflect.Value
 	// SqlSource 用于保存 xml 配置的文件的根路径配置信息，Build会通过SqlSource属性去加载 xml 文件
 	SqlSource string
@@ -38,6 +40,11 @@ type Build struct {
 	NameSpaces map[string]*Sql
 	// mapper 文件加载
 	mapperFS embed.FS
+}
+
+// Logs 切换日志实例
+func (build *Build) Logs(log Log) {
+	build.Log = log
 }
 
 // Source 加载 mapper文件
@@ -66,7 +73,7 @@ func (build *Build) Source(source string) {
 				s := NewSql(element)
 				s.LoadSqlElement()
 				build.NameSpaces[attr.Value] = s
-				Info("load mapper file path:[" + path + "]")
+				build.Info("load mapper file path:[" + path + "]")
 			}
 			return nil
 		})
@@ -78,7 +85,7 @@ func (build *Build) Source(source string) {
 		if err != nil {
 			panic(err)
 		}
-		walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
+		build.walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
 	}
 
 }
@@ -90,7 +97,7 @@ func (build *Build) Load(files embed.FS) {
 
 // ScanMappers 扫描解析
 func (build *Build) ScanMappers(mappers ...any) {
-	Info("Start scanning the mapper mapping function")
+	build.Info("Start scanning the mapper mapping function")
 	for i := 0; i < len(mappers); i++ {
 		mapper := mappers[i]
 		vf := reflect.ValueOf(mapper)
@@ -103,7 +110,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 		vf = vf.Elem()
 		namespace := vf.Type().String()
 		namespace = Namespace(namespace)
-		Info("Starts loading the '" + namespace + "' mapping resolution")
+		build.Info("Starts loading the '" + namespace + "' mapping resolution")
 		for j := 0; j < vf.NumField(); j++ {
 			key := make([]string, 0)
 			key = append(key, namespace)
@@ -118,7 +125,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 			}
 			key = append(key, structField.Name)
 			build.initMapper(key, field)
-			Info(namespace+"."+structField.Name, field.Type().String())
+			build.Info(namespace+"."+structField.Name, field.Type().String())
 		}
 	}
 }
@@ -251,7 +258,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	return true, nil
 }
 
-func walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
+func (build *Build) walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
 	for _, dirEntry := range list {
 		path := filepath.Join(root, dirEntry.Name())
 		path = filepath.ToSlash(path)
@@ -261,7 +268,7 @@ func walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string
 			if err != nil {
 				panic(err)
 			}
-			walk(path, dir, files, NameSpaces)
+			build.walk(path, dir, files, NameSpaces)
 		}
 		if strings.HasSuffix(path, ".xml") {
 			b, err := files.ReadFile(path)
@@ -279,7 +286,7 @@ func walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string
 			s := NewSql(element)
 			s.LoadSqlElement()
 			NameSpaces[attr.Value] = s
-			Info("load mapper file path:[" + path + "]")
+			build.Info("load mapper file path:[" + path + "]")
 		}
 	}
 }
