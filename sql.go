@@ -1,4 +1,4 @@
-package sgo
+package gobatis
 
 import "github.com/beevik/etree"
 

@@ -1,4 +1,4 @@
-package sgo
+package gobatis
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 
 var banner = " __ __ _  \n(_ /__/ \\ \n__)\\_|\\_/ \n"
 
-func New(db *sql.DB) *Build {
+func New(db *sql.DB) *GoBatis {
 	if db == nil {
 		Panic("db nil")
 	}
@@ -24,14 +24,14 @@ func New(db *sql.DB) *Build {
 	if err != nil {
 		Panic(err)
 	}
-	return &Build{
+	return &GoBatis{
 		db:         reflect.ValueOf(db),
 		NameSpaces: map[string]*Sql{},
 		Log:        logs,
 	}
 }
 
-type Build struct {
+type GoBatis struct {
 	Log
 	db reflect.Value
 	// SqlSource 用于保存 xml 配置的文件的根路径配置信息，Build会通过SqlSource属性去加载 xml 文件
@@ -43,13 +43,13 @@ type Build struct {
 }
 
 // Logs 切换日志实例
-func (build *Build) Logs(log Log) {
+func (build *GoBatis) Logs(log Log) {
 	build.Log = log
 }
 
 // Source 加载 mapper文件
 // source 应当是项目中的 mapper 文件根路径文件夹名称
-func (build *Build) Source(source string) {
+func (build *GoBatis) Source(source string) {
 	if source != "" {
 		build.SqlSource = source
 	}
@@ -91,12 +91,12 @@ func (build *Build) Source(source string) {
 }
 
 // Load 加载 mapper 静态文件
-func (build *Build) Load(files embed.FS) {
+func (build *GoBatis) Load(files embed.FS) {
 	build.mapperFS = files
 }
 
 // ScanMappers 扫描解析
-func (build *Build) ScanMappers(mappers ...any) {
+func (build *GoBatis) ScanMappers(mappers ...any) {
 	build.Info("Start scanning the mapper mapping function")
 	for i := 0; i < len(mappers); i++ {
 		mapper := mappers[i]
@@ -150,7 +150,7 @@ func (build *Build) ScanMappers(mappers ...any) {
 //	return "", "", nil, nil
 //}
 
-func (build *Build) get(id []string, value any) (string, string, string, []any, error) {
+func (build *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
 	}
@@ -258,7 +258,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	return true, nil
 }
 
-func (build *Build) walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
+func (build *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
 	for _, dirEntry := range list {
 		path := filepath.Join(root, dirEntry.Name())
 		path = filepath.ToSlash(path)

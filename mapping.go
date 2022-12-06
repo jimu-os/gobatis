@@ -1,4 +1,4 @@
-package sgo
+package gobatis
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *Build) mapper(id []string, returns []reflect.Value) MapperFunc {
+func (build *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		result := make([]reflect.Value, len(returns))
 		copy(result, returns)
@@ -100,7 +100,7 @@ func Return(result []reflect.Value) (ret []reflect.Value) {
 }
 
 // SelectStatement 执行查询
-func (build *Build) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (build *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
 	Query := db.MethodByName("QueryContext")
@@ -141,7 +141,7 @@ func (build *Build) selectStatement(db, ctx reflect.Value, statements, templateS
 }
 
 // ExecStatement 执行修改
-func (build *Build) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (build *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if !auto {
@@ -196,7 +196,7 @@ func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 	}
 }
 
-func (build *Build) initMapper(id []string, fun reflect.Value) {
+func (build *GoBatis) initMapper(id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	values := make([]reflect.Value, 0)
 	var outValue reflect.Value
@@ -372,7 +372,7 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 		key := BaseTypeKey(v)
 		if fun, b = databaseToGolang[key]; !b {
 			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
-			// 没有找到对应的数据处理，可以通过 sgo.GolangType 方法对 具体类型进行注册
+			// 没有找到对应的数据处理，可以通过 gobatis.GolangType 方法对 具体类型进行注册
 			Panic("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")
 		}
 		err := fun(v, mapV.Elem().Interface())

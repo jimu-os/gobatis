@@ -1,4 +1,4 @@
-package sgo
+package gobatis
 
 type Other struct {
 }

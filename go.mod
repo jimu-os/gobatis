@@ -1,4 +1,4 @@
-module gitee.com/aurora-engine/GoBatis
+module gitee.com/aurora-engine/gobatis
 
 go 1.19
 
