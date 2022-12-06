@@ -25,7 +25,7 @@ go1.19
 
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
+<!DOCTYPE mapper SYSTEM "http://aurora-engine.com/GoBatis.dtd">
 
 <mapper namespace="user">
     <select id="find">
@@ -115,7 +115,7 @@ type UserMapper struct {
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE mapper
-        SYSTEM "GoBatis.dtd">
+        SYSTEM "http://aurora-engine.com/GoBatis.dtd">
 
 <mapper namespace="UserMapper">
     <select id="FindUser">
@@ -134,7 +134,7 @@ package main
 
 import (
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 )
 func main() {
 	ctx := map[string]any{
@@ -184,7 +184,7 @@ type Student struct {
 
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
+<!DOCTYPE mapper SYSTEM "http://aurora-engine.com/GoBatis.dtd">
 <mapper namespace="StudentMapper">
 
 </mapper>
@@ -211,7 +211,7 @@ type StudentMapper struct {
 
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
+<!DOCTYPE mapper SYSTEM "http://aurora-engine.com/GoBatis.dtd">
 
 <mapper namespace="StudentMapper">
     <insert id="InsertOne">
@@ -226,7 +226,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -256,7 +256,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	build := sgo.New(open)
+	build := gobatis.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
@@ -299,7 +299,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -343,7 +343,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	build := sgo.New(open)
+	build := gobatis.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
@@ -381,7 +381,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -430,7 +430,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	build := sgo.New(open)
+	build := gobatis.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
@@ -465,7 +465,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -490,7 +490,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	build := sgo.New(open)
+	build := gobatis.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
@@ -529,7 +529,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/GoBatis"
+	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
 	"time"
 )
@@ -579,7 +579,7 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	build := sgo.New(open)
+	build := gobatis.New(open)
 	build.Source("/")
 	mapper := &StudentMapper{}
 	build.ScanMappers(mapper)
