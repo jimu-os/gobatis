@@ -22,21 +22,22 @@ go1.19
 |`<if>`|if条件|判断是否满足属性表达式的条件，满足条件就对标签内的sql进行解析|
 
 ## demo
+
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "https://gitee.com/aurora-engine/sgo/blob/master/sgo.dtd">
+<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
 
 <mapper namespace="user">
     <select id="find">
         select * from student where sss={name}
         <if expr="{arr}!=nil and {len(arr)}>0">
             and
-            <for slice="{arr}" item="obj" column="id" open="("  separator="," close=")" >
+            <for slice="{arr}" item="obj" column="id" open="(" separator="," close=")">
                 {obj}
             </for>
         </if>
 
-        <if expr="{name}=='aaa'" >
+        <if expr="{name}=='aaa'">
             and abc = 1
             <if expr="1==1">
                 and 1=1
@@ -46,7 +47,7 @@ go1.19
             </if>
             or cba=1
         </if>
-        or  name = {name} and 1=1
+        or name = {name} and 1=1
     </select>
 </mapper>
 ```
@@ -110,10 +111,11 @@ type UserMapper struct {
 ```
 
 ### 创建 XML
+
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper 
-        SYSTEM "https://gitee.com/aurora-engine/sgo/blob/master/sgo.dtd">
+<!DOCTYPE mapper
+        SYSTEM "GoBatis.dtd">
 
 <mapper namespace="UserMapper">
     <select id="FindUser">
@@ -179,11 +181,12 @@ type Student struct {
 ```
 
 ## 创建 Mapper 和 XML
+
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "http://sgo.com">
+<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
 <mapper namespace="StudentMapper">
-    
+
 </mapper>
 ```
 解析： `http://sgo.com` 文档约束是通过 编辑器设置的，项目文件夹下的 sgo.dtd 文件导入即可。<br>
@@ -205,9 +208,10 @@ type StudentMapper struct {
 }
 ```
 开始定义 xml 元素，insert 中的模板参数，均来自于 mapper 函数的上下文参数中
+
 ```xml
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "http://sgo.com">
+<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
 
 <mapper namespace="StudentMapper">
     <insert id="InsertOne">

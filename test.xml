@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!DOCTYPE mapper SYSTEM "http://sgo.com">
+<!DOCTYPE mapper SYSTEM "GoBatis.dtd">
 
 <mapper namespace="">
 

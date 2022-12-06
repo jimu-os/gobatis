@@ -1,4 +1,4 @@
-module gitee.com/aurora-engine/sgo
+module gitee.com/aurora-engine/GoBatis
 
 go 1.19
 
