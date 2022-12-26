@@ -12,17 +12,17 @@ import (
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
+func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		result := make([]reflect.Value, len(returns))
 		copy(result, returns)
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
-		db := build.db
+		db := batis.db
 		c, ctx, db, auto := Args(db, values)
 		results := Return(result)
-		statements, tag, templateSql, params, err := build.get(id, ctx)
+		statements, tag, templateSql, params, err := batis.get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			results[len(results)-1].Set(errType)
@@ -30,12 +30,12 @@ func (build *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		}
 		switch tag {
 		case Select:
-			err := build.selectStatement(db, c, statements, templateSql, params, results)
+			err := batis.selectStatement(db, c, statements, templateSql, params, results)
 			if errType = err; !errType.IsZero() {
 				goto end
 			}
 		case Insert, Update, Delete:
-			errType = build.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
+			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 			if !errType.IsZero() {
 				goto end
 			}
@@ -100,7 +100,7 @@ func Return(result []reflect.Value) (ret []reflect.Value) {
 }
 
 // SelectStatement 执行查询
-func (build *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
 	Query := db.MethodByName("QueryContext")
@@ -136,12 +136,12 @@ func (build *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	}
 	QueryResultMapper(value, result)
 	end := time.Now()
-	build.Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
+	batis.Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
 	return err
 }
 
 // ExecStatement 执行修改
-func (build *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if !auto {
@@ -170,7 +170,7 @@ func (build *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *refl
 		return errType
 	}
 	end := time.Now()
-	build.Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
+	batis.Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
 	return errType
 }
 
@@ -196,7 +196,7 @@ func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 	}
 }
 
-func (build *GoBatis) initMapper(id []string, fun reflect.Value) {
+func (batis *GoBatis) initMapper(id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	values := make([]reflect.Value, 0)
 	var outValue reflect.Value
@@ -220,7 +220,7 @@ func (build *GoBatis) initMapper(id []string, fun reflect.Value) {
 		initField(outValue)
 		values = append(values, outValue)
 	}
-	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
+	f := reflect.MakeFunc(fun.Type(), batis.mapper(id, values))
 	fun.Set(f)
 }
 
