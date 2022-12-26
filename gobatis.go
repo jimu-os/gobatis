@@ -130,26 +130,6 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 	}
 }
 
-//func (build *Build) Sql(id string, value any) (string, string, []any, error) {
-//	ids := strings.Split(id, ".")
-//	if len(ids) != 2 {
-//		return "", "", nil, errors.New("id error")
-//	}
-//	ctx := toMap(value)
-//	if sql, b := build.NameSpaces[ids[0]]; b {
-//		if element, f := sql.Statement[ids[1]]; f {
-//			analysis, _, tempSql, params, err := Analysis(element, ctx)
-//			if err != nil {
-//				return "", "", nil, err
-//			}
-//			join := strings.Join(analysis, " ")
-//			temp := strings.Join(tempSql, " ")
-//			return join, temp, params, nil
-//		}
-//	}
-//	return "", "", nil, nil
-//}
-
 func (batis *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
