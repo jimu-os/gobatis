@@ -351,7 +351,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
 			fieldIndexMap[indexV] = Field
-			if flag := NullType(Field); flag {
+			if Null[Field.String()] {
 				values = append(values, Field.Addr())
 				continue
 			}
@@ -362,7 +362,7 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉 ，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
 			fieldIndexMap[indexV] = Field
-			if flag := NullType(Field); flag {
+			if Null[Field.String()] {
 				values = append(values, Field.Addr())
 				continue
 			}
