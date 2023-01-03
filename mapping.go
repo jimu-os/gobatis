@@ -347,25 +347,25 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
 		switch Field.Kind() {
 		case reflect.Struct:
-
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
-			fieldIndexMap[indexV] = Field
-			if Null[Field.String()] {
+			fmt.Println(Null)
+			if Null[Field.Type().String()] {
 				values = append(values, Field.Addr())
 				continue
 			}
+			fieldIndexMap[indexV] = Field
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
 		case reflect.Pointer:
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉 ，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
-			fieldIndexMap[indexV] = Field
-			if Null[Field.String()] {
+			if Null[Field.Type().String()] {
 				values = append(values, Field.Addr())
 				continue
 			}
+			fieldIndexMap[indexV] = Field
 			// 替换 使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue

@@ -2,6 +2,7 @@ package gobatis
 
 import (
 	"database/sql"
+	"gitee.com/aurora-engine/gobatis/obj"
 	"reflect"
 	"time"
 )
@@ -26,6 +27,8 @@ func init() {
 		TypeKey(&sql.NullByte{}):    nil,
 		TypeKey(sql.NullTime{}):     nil,
 		TypeKey(&sql.NullTime{}):    nil,
+		TypeKey(obj.String{}):       nil,
+		TypeKey(&obj.String{}):      nil,
 	}
 }
 
