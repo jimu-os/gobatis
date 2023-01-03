@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/iancoleman/strcase"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -407,9 +408,23 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			mapp[strcase.ToSnake(field.Name)] = field.Name
+			name := field.Name
+			// 添加多种字段名匹配情况
+
+			// 蛇形
+			mapp[strcase.ToSnake(name)] = name
+
+			// 驼峰
+			mapp[strcase.ToCamel(name)] = name
+			mapp[strcase.ToLowerCamel(name)] = name
+
+			// 全小写
+			mapp[strings.ToLower(name)] = name
+			// 全大写
+			mapp[strings.ToUpper(name)] = name
+			// 自定义
 			if get := field.Tag.Get("column"); get != "" {
-				mapp[get] = field.Name
+				mapp[get] = name
 			}
 		}
 	default:
