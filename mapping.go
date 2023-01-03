@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"reflect"
 	"strings"
@@ -298,8 +299,12 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 		}
 		// 创建 接收器
 		values, fieldIndexMap, MapKey := buildScan(unValue, column, mapping)
-		// 执行扫描, 执行结果扫描，不处理error 扫码结果类型不匹配，默认为零值
-		scan.Call(values)
+		// 执行扫描, 执行结果扫描
+		scanErr := scan.Call(values)
+		if !scanErr[0].IsZero() {
+			e := scanErr[0].Interface()
+			fmt.Println("scan error:", e.(error).Error())
+		}
 		// 迭代是否有特殊结构体 主要对 时间类型做了处理
 		scanWrite(values, fieldIndexMap)
 		scanMap(unValue, values, MapKey)
@@ -342,9 +347,14 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
 		switch Field.Kind() {
 		case reflect.Struct:
+
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
 			fieldIndexMap[indexV] = Field
+			if flag := NullType(Field); flag {
+				values = append(values, Field.Addr())
+				continue
+			}
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
@@ -352,6 +362,10 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉 ，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
 			fieldIndexMap[indexV] = Field
+			if flag := NullType(Field); flag {
+				values = append(values, Field.Addr())
+				continue
+			}
 			// 替换 使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
 			continue
@@ -375,6 +389,9 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
 			// 没有找到对应的数据处理，可以通过 gobatis.GolangType 方法对 具体类型进行注册
 			Panic("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")
+		}
+		if fun == nil {
+			continue
 		}
 		err := fun(v, mapV.Elem().Interface())
 		if err != nil {
@@ -511,4 +528,44 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err
 		}
 	}
 	return
+}
+
+// NullType 检查数据是否为 Null 类型 处理数据库 null 值
+func NullType(value reflect.Value) bool {
+	vt := value.Type()
+	switch vt.String() {
+	case reflect.TypeOf(sql.NullInt16{}).String():
+		return true
+	case reflect.TypeOf(sql.NullInt32{}).String():
+		return true
+	case reflect.TypeOf(sql.NullInt64{}).String():
+		return true
+	case reflect.TypeOf(sql.NullFloat64{}).String():
+		return true
+	case reflect.TypeOf(sql.NullBool{}).String():
+		return true
+	case reflect.TypeOf(sql.NullString{}).String():
+		return true
+	case reflect.TypeOf(sql.NullByte{}).String():
+		return true
+	case reflect.TypeOf(sql.NullTime{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullInt16{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullInt32{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullInt64{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullFloat64{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullBool{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullString{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullByte{}).String():
+		return true
+	case reflect.TypeOf(&sql.NullTime{}).String():
+		return true
+	}
+	return false
 }
