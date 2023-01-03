@@ -4,25 +4,27 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"reflect"
+	"strings"
 	"time"
 )
 
 type MapperFunc func([]reflect.Value) []reflect.Value
 
 // Mapper 创建 映射函数
-func (build *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
+func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		result := make([]reflect.Value, len(returns))
 		copy(result, returns)
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
-		db := build.db
+		db := batis.db
 		c, ctx, db, auto := Args(db, values)
 		results := Return(result)
-		statements, tag, templateSql, params, err := build.get(id, ctx)
+		statements, tag, templateSql, params, err := batis.get(id, ctx)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			results[len(results)-1].Set(errType)
@@ -30,12 +32,12 @@ func (build *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		}
 		switch tag {
 		case Select:
-			err := build.selectStatement(db, c, statements, templateSql, params, results)
+			err := batis.selectStatement(db, c, statements, templateSql, params, results)
 			if errType = err; !errType.IsZero() {
 				goto end
 			}
 		case Insert, Update, Delete:
-			errType = build.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
+			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 			if !errType.IsZero() {
 				goto end
 			}
@@ -100,7 +102,7 @@ func Return(result []reflect.Value) (ret []reflect.Value) {
 }
 
 // SelectStatement 执行查询
-func (build *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	var resultType reflect.Value
 	star := time.Now()
 	Query := db.MethodByName("QueryContext")
@@ -136,12 +138,12 @@ func (build *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	}
 	QueryResultMapper(value, result)
 	end := time.Now()
-	build.Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
+	batis.Info("SQL Query Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", value.Len(), "Time:", end.Sub(star).String())
 	return err
 }
 
 // ExecStatement 执行修改
-func (build *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
 	star := time.Now()
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if !auto {
@@ -170,7 +172,7 @@ func (build *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *refl
 		return errType
 	}
 	end := time.Now()
-	build.Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
+	batis.Info("SQL Exec Statements ==>", statements, "SQL Template ==> ", templateSql, ",Parameter:", params, "Count:", count, "Time:", end.Sub(star).String())
 	return errType
 }
 
@@ -196,7 +198,7 @@ func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 	}
 }
 
-func (build *GoBatis) initMapper(id []string, fun reflect.Value) {
+func (batis *GoBatis) initMapper(id []string, fun reflect.Value) {
 	numOut := fun.Type().NumOut()
 	values := make([]reflect.Value, 0)
 	var outValue reflect.Value
@@ -220,7 +222,7 @@ func (build *GoBatis) initMapper(id []string, fun reflect.Value) {
 		initField(outValue)
 		values = append(values, outValue)
 	}
-	f := reflect.MakeFunc(fun.Type(), build.mapper(id, values))
+	f := reflect.MakeFunc(fun.Type(), batis.mapper(id, values))
 	fun.Set(f)
 }
 
@@ -297,8 +299,12 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 		}
 		// 创建 接收器
 		values, fieldIndexMap, MapKey := buildScan(unValue, column, mapping)
-		// 执行扫描, 执行结果扫描，不处理error 扫码结果类型不匹配，默认为零值
-		scan.Call(values)
+		// 执行扫描, 执行结果扫描
+		scanErr := scan.Call(values)
+		if !scanErr[0].IsZero() {
+			e := scanErr[0].Interface()
+			fmt.Println("scan error:", e.(error).Error())
+		}
 		// 迭代是否有特殊结构体 主要对 时间类型做了处理
 		scanWrite(values, fieldIndexMap)
 		scanMap(unValue, values, MapKey)
@@ -343,6 +349,11 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		case reflect.Struct:
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
+			fmt.Println(Null)
+			if Null[Field.Type().String()] {
+				values = append(values, Field.Addr())
+				continue
+			}
 			fieldIndexMap[indexV] = Field
 			// 替换 默认使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
@@ -350,6 +361,10 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		case reflect.Pointer:
 			// indexV (在调用 scan(。。)方法参数的索引位置) 记录特殊 值的索引 并且替换掉 ，将会在 scanWrite 方法中执行替换数据
 			indexV := len(values)
+			if Null[Field.Type().String()] {
+				values = append(values, Field.Addr())
+				continue
+			}
 			fieldIndexMap[indexV] = Field
 			// 替换 使用空字符串去接收
 			values = append(values, reflect.New(reflect.TypeOf("")))
@@ -374,6 +389,9 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
 			// 没有找到对应的数据处理，可以通过 gobatis.GolangType 方法对 具体类型进行注册
 			Panic("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")
+		}
+		if fun == nil {
+			continue
 		}
 		err := fun(v, mapV.Elem().Interface())
 		if err != nil {
@@ -407,9 +425,23 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			mapp[strcase.ToSnake(field.Name)] = field.Name
+			name := field.Name
+			// 添加多种字段名匹配情况
+
+			// 蛇形
+			mapp[strcase.ToSnake(name)] = name
+
+			// 驼峰
+			mapp[strcase.ToCamel(name)] = name
+			mapp[strcase.ToLowerCamel(name)] = name
+
+			// 全小写
+			mapp[strings.ToLower(name)] = name
+			// 全大写
+			mapp[strings.ToUpper(name)] = name
+			// 自定义
 			if get := field.Tag.Get("column"); get != "" {
-				mapp[get] = field.Name
+				mapp[get] = name
 			}
 		}
 	default:

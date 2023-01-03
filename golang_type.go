@@ -1,14 +1,34 @@
 package gobatis
 
 import (
+	"database/sql"
+	"gitee.com/aurora-engine/gobatis/obj"
 	"reflect"
 	"time"
 )
 
 func init() {
 	databaseToGolang = map[string]ToGolang{
-		TypeKey(time.Time{}):  TimeData,
-		TypeKey(&time.Time{}): TimeDataPointer,
+		TypeKey(time.Time{}):        TimeData,
+		TypeKey(&time.Time{}):       TimeDataPointer,
+		TypeKey(sql.NullString{}):   nil,
+		TypeKey(&sql.NullString{}):  nil,
+		TypeKey(sql.NullInt16{}):    nil,
+		TypeKey(&sql.NullInt16{}):   nil,
+		TypeKey(sql.NullInt32{}):    nil,
+		TypeKey(&sql.NullInt32{}):   nil,
+		TypeKey(sql.NullInt64{}):    nil,
+		TypeKey(&sql.NullInt64{}):   nil,
+		TypeKey(sql.NullFloat64{}):  nil,
+		TypeKey(&sql.NullFloat64{}): nil,
+		TypeKey(sql.NullBool{}):     nil,
+		TypeKey(&sql.NullBool{}):    nil,
+		TypeKey(sql.NullByte{}):     nil,
+		TypeKey(&sql.NullByte{}):    nil,
+		TypeKey(sql.NullTime{}):     nil,
+		TypeKey(&sql.NullTime{}):    nil,
+		TypeKey(obj.String{}):       nil,
+		TypeKey(&obj.String{}):      nil,
 	}
 }
 
@@ -53,6 +73,17 @@ func TimeDataPointer(value reflect.Value, data any) error {
 	if value.CanSet() {
 		value.Set(reflect.ValueOf(&parse))
 	}
+
+	return nil
+}
+
+// NullString 空值处理
+func NullString(value reflect.Value, data any) error {
+
+	return nil
+}
+
+func NullStringPointer(value reflect.Value, data any) error {
 
 	return nil
 }

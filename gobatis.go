@@ -43,24 +43,24 @@ type GoBatis struct {
 }
 
 // Logs 切换日志实例
-func (build *GoBatis) Logs(log Log) {
-	build.Log = log
+func (batis *GoBatis) Logs(log Log) {
+	batis.Log = log
 }
 
 // Source 加载 mapper文件
 // source 应当是项目中的 mapper 文件根路径文件夹名称
-func (build *GoBatis) Source(source string) {
+func (batis *GoBatis) Source(source string) {
 	if source != "" {
-		build.SqlSource = source
+		batis.SqlSource = source
 	}
 	fmt.Print(banner)
 	// 解析 xml
-	if build.mapperFS == (embed.FS{}) && build.SqlSource != "" {
+	if batis.mapperFS == (embed.FS{}) && batis.SqlSource != "" {
 		getwd, err := os.Getwd()
 		if err != nil {
 			return
 		}
-		root := filepath.Join(getwd, build.SqlSource)
+		root := filepath.Join(getwd, batis.SqlSource)
 		filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
 			if strings.HasSuffix(path, ".xml") {
 				document := etree.NewDocument()
@@ -72,32 +72,32 @@ func (build *GoBatis) Source(source string) {
 				attr := element.SelectAttr("namespace")
 				s := NewSql(element)
 				s.LoadSqlElement()
-				build.NameSpaces[attr.Value] = s
-				build.Info("load mapper file path:[" + path + "]")
+				batis.NameSpaces[attr.Value] = s
+				batis.Info("load mapper file path:[" + path + "]")
 			}
 			return nil
 		})
 		return
 	}
 
-	if build.mapperFS != (embed.FS{}) {
-		dir, err := build.mapperFS.ReadDir(build.SqlSource)
+	if batis.mapperFS != (embed.FS{}) {
+		dir, err := batis.mapperFS.ReadDir(batis.SqlSource)
 		if err != nil {
 			panic(err)
 		}
-		build.walk(build.SqlSource, dir, build.mapperFS, build.NameSpaces)
+		batis.walk(batis.SqlSource, dir, batis.mapperFS, batis.NameSpaces)
 	}
 
 }
 
 // Load 加载 mapper 静态文件
-func (build *GoBatis) Load(files embed.FS) {
-	build.mapperFS = files
+func (batis *GoBatis) Load(files embed.FS) {
+	batis.mapperFS = files
 }
 
 // ScanMappers 扫描解析
-func (build *GoBatis) ScanMappers(mappers ...any) {
-	build.Info("Start scanning the mapper mapping function")
+func (batis *GoBatis) ScanMappers(mappers ...any) {
+	batis.Info("Start scanning the mapper mapping function")
 	for i := 0; i < len(mappers); i++ {
 		mapper := mappers[i]
 		vf := reflect.ValueOf(mapper)
@@ -110,7 +110,7 @@ func (build *GoBatis) ScanMappers(mappers ...any) {
 		vf = vf.Elem()
 		namespace := vf.Type().String()
 		namespace = Namespace(namespace)
-		build.Info("Starts loading the '" + namespace + "' mapping resolution")
+		batis.Info("Starts loading the '" + namespace + "' mapping resolution")
 		for j := 0; j < vf.NumField(); j++ {
 			key := make([]string, 0)
 			key = append(key, namespace)
@@ -124,38 +124,18 @@ func (build *GoBatis) ScanMappers(mappers ...any) {
 				Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
 			}
 			key = append(key, structField.Name)
-			build.initMapper(key, field)
-			build.Info(namespace+"."+structField.Name, field.Type().String())
+			batis.initMapper(key, field)
+			batis.Info(namespace+"."+structField.Name, field.Type().String())
 		}
 	}
 }
 
-//func (build *Build) Sql(id string, value any) (string, string, []any, error) {
-//	ids := strings.Split(id, ".")
-//	if len(ids) != 2 {
-//		return "", "", nil, errors.New("id error")
-//	}
-//	ctx := toMap(value)
-//	if sql, b := build.NameSpaces[ids[0]]; b {
-//		if element, f := sql.Statement[ids[1]]; f {
-//			analysis, _, tempSql, params, err := Analysis(element, ctx)
-//			if err != nil {
-//				return "", "", nil, err
-//			}
-//			join := strings.Join(analysis, " ")
-//			temp := strings.Join(tempSql, " ")
-//			return join, temp, params, nil
-//		}
-//	}
-//	return "", "", nil, nil
-//}
-
-func (build *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
+func (batis *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
 	}
 	ctx := toMap(value)
-	if sql, b := build.NameSpaces[id[0]]; b {
+	if sql, b := batis.NameSpaces[id[0]]; b {
 		if element, f := sql.Statement[id[1]]; f {
 			analysis, tag, tempSql, params, err := Analysis(element, ctx)
 			if err != nil {
@@ -258,7 +238,7 @@ func MapperCheck(fun reflect.Value) (bool, error) {
 	return true, nil
 }
 
-func (build *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
+func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, NameSpaces map[string]*Sql) {
 	for _, dirEntry := range list {
 		path := filepath.Join(root, dirEntry.Name())
 		path = filepath.ToSlash(path)
@@ -268,7 +248,7 @@ func (build *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 			if err != nil {
 				panic(err)
 			}
-			build.walk(path, dir, files, NameSpaces)
+			batis.walk(path, dir, files, NameSpaces)
 		}
 		if strings.HasSuffix(path, ".xml") {
 			b, err := files.ReadFile(path)
@@ -286,7 +266,7 @@ func (build *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 			s := NewSql(element)
 			s.LoadSqlElement()
 			NameSpaces[attr.Value] = s
-			build.Info("load mapper file path:[" + path + "]")
+			batis.Info("load mapper file path:[" + path + "]")
 		}
 	}
 }
