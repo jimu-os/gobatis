@@ -31,19 +31,12 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		}
 		switch tag {
 		case Select:
-			err := batis.selectStatement(db, c, statements, templateSql, params, results)
-			if errType = err; !errType.IsZero() {
-				goto end
-			}
+			errType = batis.selectStatement(db, c, statements, templateSql, params, results)
 		case Insert, Update, Delete:
 			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
-			if !errType.IsZero() {
-				goto end
-			}
 		}
-	end:
 		End(auto, results, errType, BeginCall)
-		return result
+		return results
 	}
 }
 
