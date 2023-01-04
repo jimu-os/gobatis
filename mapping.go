@@ -15,8 +15,7 @@ type MapperFunc func([]reflect.Value) []reflect.Value
 // Mapper 创建 映射函数
 func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
-		result := make([]reflect.Value, len(returns))
-		copy(result, returns)
+		result := createReturn(returns)
 		var errType, Exec, BeginCall reflect.Value
 		var ctx any
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
@@ -519,4 +518,13 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err
 		}
 	}
 	return
+}
+
+func createReturn(returns []reflect.Value) []reflect.Value {
+	values := make([]reflect.Value, len(returns))
+	for index, value := range returns {
+		elem := reflect.New(value.Type()).Elem()
+		values[index] = elem
+	}
+	return values
 }
