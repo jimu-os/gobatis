@@ -129,7 +129,7 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	}
 	QueryResultMapper(value, result)
 	end := time.Now()
-	batis.Info("SQL Query Statements ==> ", statements, " SQL Template ==> ", templateSql, ", Parameter: ", params, " Count: ", value.Len(), " ,Time: ", end.Sub(star).String())
+	batis.Info("\r\nSQL Query Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", value.Len(), "), Time: ", end.Sub(star).String())
 	return err
 }
 
@@ -163,7 +163,7 @@ func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *refl
 		return errType
 	}
 	end := time.Now()
-	batis.Info("SQL Exec Statements ==> ", statements, ", SQL Template ==> ", templateSql, " ,Parameter: ", params, ", Count: ", count, ", Time: ", end.Sub(star).String())
+	batis.Info("\r\nSQL Exec Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, ", Count: (", count, "), Time: ", end.Sub(star).String())
 	return errType
 }
 
