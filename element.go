@@ -334,6 +334,11 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 				buf.WriteString(itoa)
 				templateBuf.WriteString("?")
 				params = append(params, value)
+			case int64:
+				itoa := strconv.Itoa(int(value.(int64)))
+				buf.WriteString(itoa)
+				templateBuf.WriteString("?")
+				params = append(params, value)
 			case float64:
 				float := strconv.FormatFloat(value.(float64), 'f', 'g', 64)
 				buf.WriteString(float)
