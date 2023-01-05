@@ -523,7 +523,17 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err
 func createReturn(returns []reflect.Value) []reflect.Value {
 	values := make([]reflect.Value, len(returns))
 	for index, value := range returns {
-		elem := reflect.New(value.Type()).Elem()
+		var elem reflect.Value
+		switch value.Kind() {
+		case reflect.Struct:
+			elem = reflect.New(value.Type()).Elem()
+		case reflect.Pointer:
+			elem = reflect.New(value.Type()).Elem()
+			ptrVal := reflect.New(value.Type().Elem())
+			elem.Set(ptrVal)
+		default:
+			elem = reflect.New(value.Type()).Elem()
+		}
 		values[index] = elem
 	}
 	return values
