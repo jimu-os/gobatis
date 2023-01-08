@@ -3,7 +3,6 @@ package gobatis
 import (
 	"bytes"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -60,7 +59,7 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 			if item == nil {
 				return "", "", nil, fmt.Errorf("%s,'%s' not found", template, s)
 			}
-			switch item.(type) {
+			/*switch item.(type) {
 			case string:
 				buf.WriteString(fmt.Sprintf(" '%s' ", item.(string)))
 				templateBuf.WriteString("?")
@@ -93,7 +92,14 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 					templateBuf.WriteString("?")
 					params = append(params, handle)
 				}
+			}*/
+			value, err := elementValue(item)
+			if err != nil {
+				return "", "", nil, err
 			}
+			buf.WriteString(" " + value + " ")
+			templateBuf.WriteString("?")
+			params = append(params, item)
 			i = endIndex + 1
 			continue
 		}
