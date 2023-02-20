@@ -365,11 +365,15 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 				}
 			}*/
 			//封装 数据解析
-			v, err := elementValue(value)
+			v, flag, err := elementValue(value)
 			if err != nil {
 				return "", "", nil, err
 			}
-			buf.WriteString("'" + v + "'")
+			if flag {
+				buf.WriteString("'" + v + "'")
+			} else {
+				buf.WriteString(v)
+			}
 			templateBuf.WriteString("?")
 			params = append(params, value)
 			i = endIndex + 1
