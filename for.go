@@ -93,11 +93,15 @@ func AnalysisForTemplate(template string, ctx map[string]any, v any) (string, st
 					params = append(params, handle)
 				}
 			}*/
-			value, err := elementValue(item)
+			value, flag, err := elementValue(item)
 			if err != nil {
 				return "", "", nil, err
 			}
-			buf.WriteString(" " + value + " ")
+			if flag {
+				buf.WriteString("'" + value + "'")
+			} else {
+				buf.WriteString(value)
+			}
 			templateBuf.WriteString("?")
 			params = append(params, item)
 			i = endIndex + 1
