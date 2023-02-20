@@ -7,7 +7,6 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
 	"reflect"
-	"strconv"
 	"strings"
 )
 
@@ -324,7 +323,7 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 			if err != nil {
 				return "", "", params, fmt.Errorf("%s,'%s' not found", template, s)
 			}
-			switch value.(type) {
+			/*switch value.(type) {
 			case string:
 				buf.WriteString("'" + value.(string) + "'")
 				templateBuf.WriteString("?")
@@ -364,7 +363,15 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 					templateBuf.WriteString("?")
 					params = append(params, handle)
 				}
+			}*/
+			//封装 数据解析
+			v, err := elementValue(value)
+			if err != nil {
+				return "", "", nil, err
 			}
+			buf.WriteString("'" + v + "'")
+			templateBuf.WriteString("?")
+			params = append(params, value)
 			i = endIndex + 1
 			continue
 		}
