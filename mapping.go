@@ -117,7 +117,11 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 			elem := reflect.New(sliceType.Elem())
 			// 给指针 设置一个对应的指针值
 			resultType.Set(elem)
-		case reflect.Struct:
+		//case reflect.Struct:
+		//	resultType = reflect.New(sliceType).Elem()
+		//case reflect.String:
+		//	resultType = reflect.New(sliceType).Elem()
+		default:
 			resultType = reflect.New(sliceType).Elem()
 		}
 	} else {
