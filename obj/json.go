@@ -1,6 +1,8 @@
 package obj
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Json MySQL Json 数据结构
 type Json struct {
@@ -11,15 +13,19 @@ func (receiver *Json) Scan(data any) error {
 	if data == nil {
 		return nil
 	}
+	var value any
+	var v string
 	switch data.(type) {
+	case []uint8:
+		uint8s := data.([]uint8)
+		v = string(uint8s)
 	case string:
-		var value any
-		v := data.(string)
-		err := json.Unmarshal([]byte(v), &value)
-		if err != nil {
-			return err
-		}
-		receiver.V = value
+		v = data.(string)
 	}
+	err := json.Unmarshal([]byte(v), &value)
+	if err != nil {
+		return err
+	}
+	receiver.V = value
 	return nil
 }
