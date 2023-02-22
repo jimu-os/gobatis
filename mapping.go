@@ -31,6 +31,11 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		switch tag {
 		case Select:
 			errType = batis.selectStatement(db, c, statements, templateSql, params, results)
+			if errType.IsZero() {
+				// 如果 查询顺利，更具返回值个数 检查是否需要统计sql条数
+				errType = batis.selectCount(db, c, statements, results)
+
+			}
 		case Insert, Update, Delete:
 			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 		}
@@ -76,6 +81,7 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 }
 
 // Return 处理返回值排序
+// 排序规则为 error 类型会放在最后面，其他顺序不变
 func Return(result []reflect.Value) (ret []reflect.Value) {
 	var err reflect.Value
 	errType := reflect.TypeOf(new(error)).Elem()
@@ -135,6 +141,40 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	end := time.Now()
 	batis.Info("\r\nSQL Query Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", value.Len(), "), Time: ", end.Sub(star).String())
 	return err
+}
+
+// selectCount 统计 sql 数量
+func (batis *GoBatis) selectCount(db, ctx reflect.Value, statements string, result []reflect.Value) reflect.Value {
+	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
+	if len(result) != 3 {
+		return errType
+	}
+	countSql := createCountSql(statements)
+	Query := db.MethodByName("QueryContext")
+	call := Query.Call([]reflect.Value{
+		ctx,
+		reflect.ValueOf(countSql),
+	})
+	if !call[1].IsZero() {
+		return call[1]
+	}
+	row := call[0]
+	scan := row.MethodByName("Scan")
+	next := row.MethodByName("Next")
+	count := reflect.New(reflect.TypeOf(int64(0)))
+	for (next.Call(nil))[0].Interface().(bool) {
+		scanErr := scan.Call([]reflect.Value{count})
+		if !scanErr[0].IsZero() {
+			// 扫描错误返回给调用者
+			return scanErr[0]
+		}
+	}
+	for i := 0; i < len(result); i++ {
+		if count.Elem().Type().AssignableTo(result[i].Type()) {
+			result[i].Set(count.Elem())
+		}
+	}
+	return errType
 }
 
 // ExecStatement 执行修改
@@ -541,4 +581,19 @@ func createReturn(returns []reflect.Value) []reflect.Value {
 		values[index] = elem
 	}
 	return values
+}
+
+// createCountSql 更具 statements 和 templateSql 生产 count(*) sql
+func createCountSql(statements string) string {
+	var star, end int
+	star = strings.Index(statements, "select")
+	end = strings.Index(statements, "from")
+	if star < 0 {
+		star = strings.Index(statements, "SELECT")
+	} else if end < 0 {
+		end = strings.Index(statements, "FROM")
+	}
+
+	countSql := statements[star:6] + " count(*) " + statements[end:]
+	return countSql
 }

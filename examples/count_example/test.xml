@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE mapper SYSTEM "http://aurora-engine.com/GoBatis.dtd">
+
+<mapper namespace="CountMapper">
+    <select id="Select">
+        select * from student where id in (1,2,3)
+    </select>
+</mapper>
