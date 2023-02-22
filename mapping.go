@@ -145,11 +145,15 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 
 // selectCount 统计 sql 数量
 func (batis *GoBatis) selectCount(db, ctx reflect.Value, statements string, result []reflect.Value) reflect.Value {
+	var countSql string
+	var flag bool
 	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if len(result) != 3 {
 		return errType
 	}
-	countSql := createCountSql(statements)
+	if countSql, flag = createCountSql(statements); !flag {
+		return errType
+	}
 	Query := db.MethodByName("QueryContext")
 	call := Query.Call([]reflect.Value{
 		ctx,
@@ -584,16 +588,15 @@ func createReturn(returns []reflect.Value) []reflect.Value {
 }
 
 // createCountSql 更具 statements 和 templateSql 生产 count(*) sql
-func createCountSql(statements string) string {
-	var star, end int
-	star = strings.Index(statements, "select")
-	end = strings.Index(statements, "from")
-	if star < 0 {
-		star = strings.Index(statements, "SELECT")
-	} else if end < 0 {
-		end = strings.Index(statements, "FROM")
+func createCountSql(statements string) (string, bool) {
+	var star, end, limit int
+	lower := strings.ToLower(statements)
+	star = strings.Index(lower, "select")
+	end = strings.Index(lower, "from")
+	limit = strings.LastIndex(lower, "limit")
+	if limit < 0 {
+		return "", false
 	}
-
-	countSql := statements[star:6] + " count(*) " + statements[end:]
-	return countSql
+	countSql := statements[star:6] + " count(*) " + statements[end:limit]
+	return countSql, true
 }

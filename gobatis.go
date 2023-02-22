@@ -125,7 +125,10 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 			}
 			key = append(key, structField.Name)
 			batis.initMapper(key, field)
-			batis.Info(namespace+"."+structField.Name, field.Type().String())
+			fun := field.Type().String()
+			index := strings.Index(fun, "(")
+			fun = " " + fun[index:]
+			batis.Info(namespace+"."+structField.Name, fun)
 		}
 	}
 }

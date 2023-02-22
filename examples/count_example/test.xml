@@ -3,6 +3,6 @@
 
 <mapper namespace="CountMapper">
     <select id="Select">
-        select * from student where id in (1,2,3)
+        select * from student limit 10 offset 0
     </select>
 </mapper>
