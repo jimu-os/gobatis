@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"gitee.com/aurora-engine/gobatis"
 	_ "github.com/go-sql-driver/mysql"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"testing"
 )
 
@@ -28,4 +31,27 @@ func TestCount(t *testing.T) {
 	}
 	t.Log(students)
 	t.Log(count)
+}
+
+var srcCode = `
+package count_example
+
+import "gitee.com/aurora-engine/gobatis/examples/count_example/model"
+
+type CountMapper struct {
+	// @select select * from student limit 10 offset 0
+	Select func() ([]model.Student, int64, error)
+	Insert func(id string, name string)
+}
+`
+
+func TestAST(t *testing.T) {
+	fileSet := token.NewFileSet()
+	//file, err := parser.ParseFile(fileSet, "", srcCode, parser.ParseComments)
+	file, err := parser.ParseFile(fileSet, "", CountMapper{}, parser.ParseComments)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	ast.Print(fileSet, file)
 }
