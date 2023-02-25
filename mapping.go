@@ -39,7 +39,7 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		case Insert, Update, Delete:
 			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 		}
-		End(auto, results, errType, BeginCall)
+		End(tag, auto, results, errType, BeginCall)
 		return results
 	}
 }
@@ -216,12 +216,12 @@ func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *refl
 }
 
 // End 错误提交及回滚
-func End(auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
+func End(tag string, auto bool, result []reflect.Value, errType, BeginCall reflect.Value) {
 	length := len(result)
 	outEnd := (result)[length-1]
 	if errType.Type().AssignableTo(outEnd.Type()) && !errType.IsZero() {
 		outEnd.Set(errType)
-		if auto {
+		if auto && tag != Select {
 			RollbackFunc := BeginCall.MethodByName("Rollback")
 			Rollback := RollbackFunc.Call(nil)
 			if !Rollback[0].IsZero() {
