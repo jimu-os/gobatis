@@ -24,7 +24,7 @@ func init() {
 }
 
 func TestCount(t *testing.T) {
-	students, count, err := countMapper.Select()
+	students, count, err := countMapper.Select(1, 2)
 	if err != nil {
 		t.Error(err.Error())
 		return

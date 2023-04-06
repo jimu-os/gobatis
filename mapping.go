@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"gitee.com/aurora-engine/gobatis/opt"
 	"github.com/iancoleman/strcase"
 	"reflect"
 	"strings"
@@ -51,9 +52,15 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 	tx = db
 	// 是否启用自动提交事务
 	auto = true
+	// 创建上下文
 	ctx = reflect.ValueOf(context.Background())
+	// 创建上下文接口 类型
 	ctxType := reflect.TypeOf(new(context.Context)).Elem()
+	// 创建 tx 类型
 	txType := reflect.TypeOf(&sql.Tx{})
+
+	optType := reflect.TypeOf(new([]opt.Opt)).Elem()
+
 	length := len(values)
 	for i := 0; i < length; i++ {
 		arg := values[i]
@@ -72,6 +79,18 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 			auto = false
 			continue
 		}
+		if argType.AssignableTo(optType) {
+			if !arg.IsZero() {
+				for j := 0; j < arg.Len(); j++ {
+					value := arg.Index(j)
+					if !value.IsZero() && value.Type().AssignableTo(txType) {
+						tx = value
+					}
+				}
+			}
+			continue
+		}
+		// 其余参数全都按照正常参数处理
 		args = arg.Interface()
 		m := toMap(args)
 		mergeMap(params, m)
@@ -568,6 +587,7 @@ func ExecResultMapper(result []reflect.Value, exec sql.Result) (count int64, err
 	return
 }
 
+// 生成返回值所需要的反射数据
 func createReturn(returns []reflect.Value) []reflect.Value {
 	values := make([]reflect.Value, len(returns))
 	for index, value := range returns {
