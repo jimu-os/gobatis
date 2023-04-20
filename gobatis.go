@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 )
 
 var banner = "  ______       ______             _      \n / _____)     (____  \\       _   (_)     \n| /  ___  ___  ____)  ) ____| |_  _  ___ \n| | (___)/ _ \\|  __  ( / _  |  _)| |/___)\n| \\____/| |_| | |__)  | ( | | |__| |___ |\n \\_____/ \\___/|______/ \\_||_|\\___)_(___/ \n"
@@ -98,39 +99,44 @@ func (batis *GoBatis) Load(files embed.FS) {
 // ScanMappers 扫描解析
 func (batis *GoBatis) ScanMappers(mappers ...any) {
 	batis.Info("Start scanning the mapper mapping function")
+	group := sync.WaitGroup{}
+	group.Add(len(mappers))
 	for i := 0; i < len(mappers); i++ {
-		mapper := mappers[i]
-		vf := reflect.ValueOf(mapper)
-		if vf.Kind() != reflect.Pointer {
-			panic("")
-		}
-		if vf.Elem().Kind() != reflect.Struct {
-			panic("")
-		}
-		vf = vf.Elem()
-		namespace := vf.Type().String()
-		namespace = Namespace(namespace)
-		batis.Info("Starts loading the '" + namespace + "' mapping resolution")
-		for j := 0; j < vf.NumField(); j++ {
-			key := make([]string, 0)
-			key = append(key, namespace)
-			structField := vf.Type().Field(j)
-			field := vf.Field(j)
-			if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
-				continue
+		go func(mapper any) {
+			defer group.Done()
+			vf := reflect.ValueOf(mapper)
+			if vf.Kind() != reflect.Pointer {
+				panic("")
 			}
-			// mapper 函数校验规范
-			if flag, err := MapperCheck(field); !flag {
-				Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
+			if vf.Elem().Kind() != reflect.Struct {
+				panic("")
 			}
-			key = append(key, structField.Name)
-			batis.initMapper(key, field)
-			fun := field.Type().String()
-			index := strings.Index(fun, "(")
-			fun = " " + fun[index:]
-			batis.Info(namespace+"."+structField.Name, fun)
-		}
+			vf = vf.Elem()
+			namespace := vf.Type().String()
+			namespace = Namespace(namespace)
+			batis.Info("Starts loading the '" + namespace + "' mapping resolution")
+			for j := 0; j < vf.NumField(); j++ {
+				key := make([]string, 0)
+				key = append(key, namespace)
+				structField := vf.Type().Field(j)
+				field := vf.Field(j)
+				if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
+					continue
+				}
+				// mapper 函数校验规范
+				if flag, err := MapperCheck(field); !flag {
+					Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
+				}
+				key = append(key, structField.Name)
+				batis.initMapper(key, field)
+				fun := field.Type().String()
+				index := strings.Index(fun, "(")
+				fun = " " + fun[index:]
+				batis.Info(namespace+"."+structField.Name, fun)
+			}
+		}(mappers[i])
 	}
+	group.Wait()
 }
 
 func (batis *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
