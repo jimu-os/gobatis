@@ -74,7 +74,7 @@ func (batis *GoBatis) Source(source string) {
 				s := NewSql(element)
 				s.LoadSqlElement()
 				batis.NameSpaces[attr.Value] = s
-				batis.Info("load mapper file path:[" + path + "]")
+				batis.Debug("load mapper file path:[" + path + "]")
 			}
 			return nil
 		})
@@ -114,26 +114,30 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 			vf = vf.Elem()
 			namespace := vf.Type().String()
 			namespace = Namespace(namespace)
-			batis.Info("Starts loading the '" + namespace + "' mapping resolution")
+			batis.Debug("Starts loading the '" + namespace + "' mapping resolution")
+			wait := sync.WaitGroup{}
+			wait.Add(vf.NumField())
 			for j := 0; j < vf.NumField(); j++ {
 				key := make([]string, 0)
 				key = append(key, namespace)
-				structField := vf.Type().Field(j)
-				field := vf.Field(j)
-				if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
-					continue
-				}
-				// mapper 函数校验规范
-				if flag, err := MapperCheck(field); !flag {
-					Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
-				}
-				key = append(key, structField.Name)
-				batis.initMapper(key, field)
-				fun := field.Type().String()
-				index := strings.Index(fun, "(")
-				fun = " " + fun[index:]
-				batis.Info(namespace+"."+structField.Name, fun)
+				go func(field reflect.Value, structField reflect.StructField) {
+					defer wait.Done()
+					if !structField.IsExported() || structField.Type.Kind() != reflect.Func {
+						return
+					}
+					// mapper 函数校验规范
+					if flag, err := MapperCheck(field); !flag {
+						Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
+					}
+					key = append(key, structField.Name)
+					batis.initMapper(key, field)
+					fun := field.Type().String()
+					index := strings.Index(fun, "(")
+					fun = " " + fun[index:]
+					batis.Debug(namespace+"."+structField.Name, fun)
+				}(vf.Field(j), vf.Type().Field(j))
 			}
+			wait.Wait()
 		}(mappers[i])
 	}
 	group.Wait()
