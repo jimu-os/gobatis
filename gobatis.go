@@ -98,7 +98,7 @@ func (batis *GoBatis) Load(files embed.FS) {
 
 // ScanMappers 扫描解析
 func (batis *GoBatis) ScanMappers(mappers ...any) {
-	batis.Info("Start scanning the mapper mapping function")
+	batis.Debug("Start scanning the mapper mapping function")
 	group := sync.WaitGroup{}
 	group.Add(len(mappers))
 	for i := 0; i < len(mappers); i++ {
@@ -279,7 +279,7 @@ func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 			s := NewSql(element)
 			s.LoadSqlElement()
 			NameSpaces[attr.Value] = s
-			batis.Info("load mapper file path:[" + path + "]")
+			batis.Debug("load mapper file path:[" + path + "]")
 		}
 	}
 }
