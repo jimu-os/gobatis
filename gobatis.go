@@ -54,7 +54,7 @@ func (batis *GoBatis) Source(source string) {
 	if source != "" {
 		batis.SqlSource = source
 	}
-	fmt.Print(banner)
+	//fmt.Print(banner)
 	// 解析 xml
 	if batis.mapperFS == (embed.FS{}) && batis.SqlSource != "" {
 		getwd, err := os.Getwd()
