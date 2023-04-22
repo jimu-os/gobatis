@@ -5,10 +5,7 @@ import (
 	"gitee.com/aurora-engine/gobatis/opt"
 )
 
-type CountMapper struct {
-	// @param
-	// @return
-	Select func(...opt.Opt) ([]model.Student, int64, error)
-
+type StudentMapper struct {
+	Select     func(...opt.Opt) ([]model.Student, int64, error)
 	SelectTest func(any, ...opt.Opt) ([]model.Student, int64, error)
 }
