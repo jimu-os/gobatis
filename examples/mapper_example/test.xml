@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <mapper namespace="StudentMapper">
-    <select id="Select">
-        select * from student limit 10 offset 0
-    </select>
+   <insert id="AddOne">
+       insert into student (name, age, create_time)
+       values ({name},{age},{createtime});
+   </insert>
 </mapper>

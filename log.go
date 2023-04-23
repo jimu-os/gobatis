@@ -21,7 +21,7 @@ type Log interface {
 
 func init() {
 	logs = logrus.New()
-	f := &Formatter{ProjectName: "SGO"}
+	f := &Formatter{ProjectName: "GoBatis"}
 	f.Buf = &sync.Pool{New: func() any {
 		return new(bytes.Buffer)
 	}}
