@@ -157,7 +157,6 @@ func structToMap(value reflect.Value, ctx map[string]any) {
 		if tag, b := FiledType.Tag.Lookup("name"); b && tag != "" {
 			key = tag
 		}
-		key = strings.ToLower(key)
 		v := field.Interface()
 		if dataType(v) {
 			ctx[key] = v

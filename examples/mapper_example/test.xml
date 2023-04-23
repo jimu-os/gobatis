@@ -2,16 +2,16 @@
 <mapper namespace="StudentMapper">
     <insert id="AddOne">
        insert into student (name, age, create_time)
-       values ({name},{age},{createtime});
+       values ({Name},{Age},{CreateTime});
     </insert>
     <insert id="InsertId">
         insert into student (name, age, create_time)
-        values ({name},{age},{createtime});
+        values ({Name},{Age},{CreateTime});
     </insert>
     <insert id="Adds">
         insert into student (name, age, create_time) values
         <for slice="{arr}" item="stu">
-            ({stu.name},{stu.age},{stu.createtime})
+            ({stu.Name},{stu.Age},{stu.CreateTime})
         </for>
     </insert>
 
