@@ -1,4 +1,4 @@
-package count_example
+package mapper_example
 
 import (
 	"database/sql"
@@ -20,12 +20,6 @@ func init() {
 	batis.ScanMappers(countMapper)
 }
 
-func TestCount(t *testing.T) {
-	students, count, err := countMapper.Select()
-	if err != nil {
-		t.Error(err.Error())
-		return
-	}
-	t.Log(students)
-	t.Log(count)
+func TestInsert(t *testing.T) {
+
 }
