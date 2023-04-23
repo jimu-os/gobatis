@@ -248,10 +248,12 @@ func End(tag string, auto bool, result []reflect.Value, errType, BeginCall refle
 			}
 		}
 	} else if BeginCall != (reflect.Value{}) && auto {
-		CommitFunc := BeginCall.MethodByName("Commit")
-		Commit := CommitFunc.Call(nil)
-		if !Commit[0].IsZero() {
-			outEnd.Set(Commit[0])
+		if tag != Select {
+			CommitFunc := BeginCall.MethodByName("Commit")
+			Commit := CommitFunc.Call(nil)
+			if !Commit[0].IsZero() {
+				outEnd.Set(Commit[0])
+			}
 		}
 	}
 }
