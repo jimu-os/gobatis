@@ -27,6 +27,7 @@ func init() {
 	}}
 	logs.SetFormatter(f)
 	logs.Out = os.Stdout
+	logs.Level = logrus.DebugLevel
 }
 
 func Level(level logrus.Level) {
