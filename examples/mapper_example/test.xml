@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <mapper namespace="StudentMapper">
-   <insert id="AddOne">
+    <insert id="AddOne">
        insert into student (name, age, create_time)
        values ({name},{age},{createtime});
-   </insert>
+    </insert>
+    <insert id="InsertId">
+        insert into student (name, age, create_time)
+        values ({name},{age},{createtime});
+    </insert>
+    <insert id="Adds">
+        insert into student (name, age, create_time) values
+        <for slice="{arr}" item="stu">
+            ({stu.name},{stu.age},{stu.createtime})
+        </for>
+    </insert>
+
+    <select id="QueryAll">
+        select * from student
+    </select>
+
+    <select id="QueryPage">
+        select * from student limit 2 offset 0
+    </select>
 </mapper>
