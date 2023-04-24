@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"gitee.com/aurora-engine/gobatis/opt"
 	"github.com/iancoleman/strcase"
 	"reflect"
 	"strings"
@@ -59,8 +58,6 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 	// 创建 tx 类型
 	txType := reflect.TypeOf(&sql.Tx{})
 
-	optType := reflect.TypeOf(new([]opt.Opt)).Elem()
-
 	length := len(values)
 	for i := 0; i < length; i++ {
 		arg := values[i]
@@ -77,17 +74,6 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 			tx = arg
 			// 外部提供 事务，GoBatis 内部不自动提交
 			auto = false
-			continue
-		}
-		if argType.AssignableTo(optType) {
-			if !arg.IsZero() {
-				for j := 0; j < arg.Len(); j++ {
-					value := arg.Index(j)
-					if !value.IsZero() && value.Type().AssignableTo(txType) {
-						tx = value
-					}
-				}
-			}
 			continue
 		}
 		// 其余参数全都按照正常参数处理

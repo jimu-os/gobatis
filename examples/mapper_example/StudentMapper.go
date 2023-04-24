@@ -1,6 +1,9 @@
 package mapper_example
 
-import "gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
+import (
+	"database/sql"
+	"gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
+)
 
 type StudentMapper struct {
 	AddOne   func(student model.Student) error
@@ -9,4 +12,6 @@ type StudentMapper struct {
 
 	QueryAll  func() ([]model.Student, error)
 	QueryPage func() ([]model.Student, int64, error)
+
+	Update func(student model.Student, tx *sql.Tx) (int64, error)
 }

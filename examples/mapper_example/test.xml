@@ -22,4 +22,8 @@
     <select id="QueryPage">
         select * from student limit 2 offset 0
     </select>
+
+    <update id="Update">
+        update student set name={Name} where age>{Age}
+    </update>
 </mapper>

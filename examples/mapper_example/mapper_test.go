@@ -10,11 +10,13 @@ import (
 	"time"
 )
 
+var err error
+var open *sql.DB
 var studentMapper *StudentMapper
 
 func init() {
 	studentMapper = &StudentMapper{}
-	open, err := sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community?charset=utf8&parseTime=True&loc=Local")
+	open, err = sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		return
 	}
@@ -30,7 +32,7 @@ func TestAddOne(t *testing.T) {
 		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
-	if err := studentMapper.AddOne(s); err != nil {
+	if err = studentMapper.AddOne(s); err != nil {
 		t.Error(err.Error())
 		return
 	}
@@ -46,7 +48,7 @@ func TestAdds(t *testing.T) {
 		}
 		arr = append(arr, s)
 	}
-	err := studentMapper.Adds(
+	err = studentMapper.Adds(
 		map[string]any{
 			"arr": arr,
 		},
@@ -59,7 +61,6 @@ func TestAdds(t *testing.T) {
 
 func TestInsertId(t *testing.T) {
 	var count, id int64
-	var err error
 	s := model.Student{
 		Name:       "test",
 		Age:        2,
@@ -75,7 +76,6 @@ func TestInsertId(t *testing.T) {
 
 func TestQueryAll(t *testing.T) {
 	var stus []model.Student
-	var err error
 	if stus, err = studentMapper.QueryAll(); err != nil {
 		t.Error(err.Error())
 		return
@@ -86,10 +86,30 @@ func TestQueryAll(t *testing.T) {
 func TestQueryPage(t *testing.T) {
 	var stus []model.Student
 	var count int64
-	var err error
 	if stus, count, err = studentMapper.QueryPage(); err != nil {
 		t.Error(err.Error())
 		return
 	}
 	t.Log("rows:", stus, "count:", count)
+}
+
+func TestUpdate(t *testing.T) {
+	var begin *sql.Tx
+	var count int64
+	begin, err = open.Begin()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	u := model.Student{
+		Name: "awen",
+		Age:  5,
+	}
+	count, err = studentMapper.Update(u, begin)
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	begin.Commit()
+	t.Log(count)
 }
