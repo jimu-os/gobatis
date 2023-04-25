@@ -10,6 +10,8 @@ const (
 	Mapper = "mapper"
 	For    = "for"
 	If     = "if"
+	Value  = "value"
+	Where  = "where"
 )
 
 // Sql 单个xml的解析结构
