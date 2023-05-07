@@ -114,6 +114,17 @@ func TestUpdate(t *testing.T) {
 	t.Log(count)
 }
 
+func TestIf(t *testing.T) {
+	args := map[string]any{
+		"id":   1,
+		"name": "test_0",
+	}
+	if err = studentMapper.QueryIf(args); err != nil {
+		t.Error(err.Error())
+		return
+	}
+}
+
 func TestWhere(t *testing.T) {
 	if err = tag.Where(); err != nil {
 		t.Error(err.Error())

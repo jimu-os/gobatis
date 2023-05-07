@@ -11,7 +11,7 @@ func WhereTag(element *etree.Element, template string, ctx map[string]any) (stri
 	if err != nil {
 		return "", "", nil, nil
 	}
-	analysisTemplate = fmt.Sprintf("%s (%s)", tag, analysisTemplate)
-	t = fmt.Sprintf("%s (%s)", tag, t)
+	analysisTemplate = fmt.Sprintf("%s%s", tag, analysisTemplate)
+	t = fmt.Sprintf("%s%s", tag, t)
 	return analysisTemplate, t, param, nil
 }

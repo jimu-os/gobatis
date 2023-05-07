@@ -154,6 +154,8 @@ func (batis *GoBatis) get(id []string, value any) (string, string, string, []any
 			if err != nil {
 				return "", "", "", nil, err
 			}
+			analysis = sqlTag(analysis)
+			tempSql = sqlTag(tempSql)
 			join := strings.Join(analysis, " ")
 			temp := strings.Join(tempSql, " ")
 			return join, tag, temp, params, nil
@@ -286,4 +288,20 @@ func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 			batis.Debug("load mapper file path:[" + path + "]")
 		}
 	}
+}
+
+func sqlTag(sqls []string) []string {
+	length := len(sqls)
+	if sqls == nil || len(sqls) == 0 {
+		return sqls
+	}
+	key := sqls[length-2]
+	s := sqls[length-1]
+	if s == "" {
+		switch key {
+		case Where, WHERE, Value, Values, VALUE, VALUES:
+			sqls = sqls[:length-2]
+		}
+	}
+	return sqls
 }

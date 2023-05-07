@@ -128,10 +128,6 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 			elem := reflect.New(sliceType.Elem())
 			// 给指针 设置一个对应的指针值
 			resultType.Set(elem)
-		//case reflect.Struct:
-		//	resultType = reflect.New(sliceType).Elem()
-		//case reflect.String:
-		//	resultType = reflect.New(sliceType).Elem()
 		default:
 			resultType = reflect.New(sliceType).Elem()
 		}
@@ -150,7 +146,7 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 		batis.Debug("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", value.Len(), "), Time: ", end.Sub(star).String())
 	}
 	end := time.Now()
-	batis.Debug("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", 0, "), Time: ", end.Sub(star).String())
+	batis.Debug("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Time: ", end.Sub(star).String())
 	return err
 }
 

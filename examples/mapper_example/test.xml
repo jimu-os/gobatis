@@ -28,4 +28,14 @@
     <update id="Update">
         update student set name={Name} where age>{Age}
     </update>
+
+    <select id="QueryIf">
+        select * from student
+        <where>
+            <if expr="{name!=nil}">
+                name={name}
+            </if>
+        </where>
+    </select>
+
 </mapper>
