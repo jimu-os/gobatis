@@ -15,5 +15,5 @@ type StudentMapper struct {
 
 	Update func(student model.Student, tx *sql.Tx) (int64, error)
 
-	QueryIf func(any) error
+	QueryIf func(any) (model.Student, error)
 }

@@ -115,14 +115,16 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestIf(t *testing.T) {
+	var stu model.Student
 	args := map[string]any{
-		"id":   1,
-		"name": "test_0",
+		"id": 1,
+		//"name": "test_0",
 	}
-	if err = studentMapper.QueryIf(args); err != nil {
+	if stu, err = studentMapper.QueryIf(args); err != nil {
 		t.Error(err.Error())
 		return
 	}
+	t.Log(stu)
 }
 
 func TestWhere(t *testing.T) {

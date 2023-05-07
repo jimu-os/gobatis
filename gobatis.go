@@ -154,8 +154,6 @@ func (batis *GoBatis) get(id []string, value any) (string, string, string, []any
 			if err != nil {
 				return "", "", "", nil, err
 			}
-			analysis = sqlTag(analysis)
-			tempSql = sqlTag(tempSql)
 			join := strings.Join(analysis, " ")
 			temp := strings.Join(tempSql, " ")
 			return join, tag, temp, params, nil
@@ -188,14 +186,20 @@ func Analysis(element *etree.Element, ctx map[string]any) ([]string, string, []s
 	if sqlStar != "" && err == nil {
 		// 解析子标签内容
 		child := element.ChildElements()
+		var childAnalysis, childTempSql []string
+		var childParams []any
 		for _, childElement := range child {
-			analysis, _, tempSql, params, err := Analysis(childElement, ctx)
+			childAnalysis, _, childTempSql, childParams, err = Analysis(childElement, ctx)
 			if err != nil {
-				return nil, "", tempSql, params, fmt.Errorf("%s -> %s error,%s", element.Tag, childElement.Tag, err.Error())
+				return nil, "", childTempSql, params, fmt.Errorf("%s -> %s error,%s", element.Tag, childElement.Tag, err.Error())
 			}
-			SQL = append(SQL, analysis...)
-			template = append(template, tempSql...)
-			args = append(args, params...)
+			SQL = append(SQL, childAnalysis...)
+			template = append(template, childTempSql...)
+			args = append(args, childParams...)
+		}
+		// 子节点解析内容为空 根据情况处理当前节点
+		if len(childAnalysis) <= 1 {
+			SQL, template = sqlTag(element, SQL, template)
 		}
 	}
 	endSql := element.Tail()
@@ -290,18 +294,13 @@ func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 	}
 }
 
-func sqlTag(sqls []string) []string {
-	length := len(sqls)
+func sqlTag(element *etree.Element, sqls, tmeplate []string) ([]string, []string) {
 	if sqls == nil || len(sqls) == 0 {
-		return sqls
+		return sqls, tmeplate
 	}
-	key := sqls[length-2]
-	s := sqls[length-1]
-	if s == "" {
-		switch key {
-		case Where, WHERE, Value, Values, VALUE, VALUES:
-			sqls = sqls[:length-2]
-		}
+	switch element.Tag {
+	case Where, WHERE, Value, Values, VALUE, VALUES:
+		return []string{}, []string{}
 	}
-	return sqls
+	return sqls, tmeplate
 }
