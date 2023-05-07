@@ -12,17 +12,17 @@ import (
 
 var err error
 var open *sql.DB
-var studentMapper *StudentMapper
+var studentMapper = &StudentMapper{}
+var tag = &TagTestMapper{}
 
 func init() {
-	studentMapper = &StudentMapper{}
-	open, err = sql.Open("mysql", "root:Aurora@2022@tcp(82.157.160.117:3306)/community?charset=utf8&parseTime=True&loc=Local")
+	open, err = sql.Open("mysql", "root:Awen*0802^@tcp(localhost:3306)/gobatis?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		return
 	}
 	batis := gobatis.New(open)
 	batis.Source("/")
-	batis.ScanMappers(studentMapper)
+	batis.ScanMappers(studentMapper, tag)
 }
 
 func TestAddOne(t *testing.T) {
@@ -112,4 +112,11 @@ func TestUpdate(t *testing.T) {
 	}
 	begin.Commit()
 	t.Log(count)
+}
+
+func TestWhere(t *testing.T) {
+	if err = tag.Where(); err != nil {
+		t.Error(err.Error())
+		return
+	}
 }

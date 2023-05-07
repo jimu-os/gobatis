@@ -11,7 +11,11 @@ const (
 	For    = "for"
 	If     = "if"
 	Value  = "value"
+	VALUE  = "VALUE"
+	Values = "values"
+	VALUES = "VALUES"
 	Where  = "where"
+	WHERE  = "WHERE"
 )
 
 // Sql 单个xml的解析结构

@@ -9,10 +9,12 @@
         values ({Name},{Age},{CreateTime});
     </insert>
     <insert id="Adds">
-        insert into student (name, age, create_time) values
-        <for slice="{arr}" item="stu">
-            ({stu.Name},{stu.Age},{stu.CreateTime})
-        </for>
+        insert into student (name, age, create_time)
+        <values>
+            <for slice="{arr}" item="stu">
+                ({stu.Name},{stu.Age},{stu.CreateTime})
+            </for>
+        </values>
     </insert>
 
     <select id="QueryAll">
