@@ -179,8 +179,10 @@ func Analysis(element *etree.Element, ctx map[string]any) ([]string, string, []s
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	SQL = append(SQL, sqlStar)
-	template = append(template, t)
+	if sqlStar != "" && t != "" {
+		SQL = append(SQL, sqlStar)
+		template = append(template, t)
+	}
 	args = append(args, params...)
 	// if 标签解析 逻辑不通过
 	if sqlStar != "" && err == nil {
@@ -198,9 +200,10 @@ func Analysis(element *etree.Element, ctx map[string]any) ([]string, string, []s
 			args = append(args, childParams...)
 		}
 		// 子节点解析内容为空 根据情况处理当前节点
-		if len(childAnalysis) <= 1 {
-			SQL, template = sqlTag(element, SQL, template)
-		}
+		//if len(childAnalysis) <= 1 {
+		//	SQL, template = sqlTag(element, SQL, template)
+		//}
+		SQL, template = sqlTag(element, SQL, template)
 	}
 	endSql := element.Tail()
 	endSql = strings.TrimSpace(endSql)
@@ -300,7 +303,15 @@ func sqlTag(element *etree.Element, sqls, tmeplate []string) ([]string, []string
 	}
 	switch element.Tag {
 	case Where, WHERE, Value, Values, VALUE, VALUES:
-		return []string{}, []string{}
+		// 对最后一部分数据进行校验
+		for i, s := range sqls {
+			if s == Where || s == WHERE || s == Value || s == VALUE || s == Values || s == VALUES {
+				if i == len(sqls)-1 {
+					return sqls[:i], tmeplate[:i]
+				}
+			}
+		}
+		return sqls, tmeplate
 	}
 	return sqls, tmeplate
 }

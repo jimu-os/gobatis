@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <mapper namespace="TagTestMapper">
     <select id="Where">
-        select * from gobatis.student
+        select * from student
         <WHERE>
-             1=1
+
         </WHERE>
     </select>
+
+    <insert id="Values">
+
+    </insert>
 </mapper>

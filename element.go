@@ -214,6 +214,8 @@ func filedToMap(value any) []map[string]any {
 			m := toMap(val.Interface())
 			arr = append(arr, m)
 		}
+	case reflect.Slice:
+
 	case reflect.Map:
 		for i := 0; i < length; i++ {
 			val := valueOf.Index(i)
@@ -253,6 +255,9 @@ func dataHandle(value any) (any, error) {
 	// TODO 处理复杂数据类型解析，更具数据解析器得到的数据
 	key := TypeKey(value)
 	database := golangToDatabase[key]
+	if database == nil {
+		return nil, errors.New("unknown data processing")
+	}
 	result, err := database(value)
 	if err != nil {
 		return "", err
