@@ -143,14 +143,14 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 	group.Wait()
 }
 
-func (batis *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
+func (batis *GoBatis) get(id []string, value map[string]any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
 	}
-	ctx := toMap(value)
+	//ctx := toMap(value)
 	if sql, b := batis.NameSpaces[id[0]]; b {
 		if element, f := sql.Statement[id[1]]; f {
-			analysis, tag, tempSql, params, err := Analysis(element, ctx)
+			analysis, tag, tempSql, params, err := Analysis(element, value)
 			if err != nil {
 				return "", "", "", nil, err
 			}
@@ -227,17 +227,15 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return ForElement(element, template, ctx)
 	case If:
 		return IfElement(element, template, ctx)
-	case Where, WHERE:
-		return WhereTag(element, template, ctx)
-	case Value, Values, VALUE, VALUES:
-		return ValueTag(element, template, ctx)
 	case Select, Update, Delete, Insert:
 		return StatementElement(element, template, ctx)
 	case Mapper:
 		// 对根标签不做任何处理
 		return "", "", nil, nil
+	default:
+		return keyTag(element, template, ctx)
 	}
-	return "", "", nil, errors.New("error")
+	//return "", "", nil, errors.New("error")
 }
 
 func Namespace(namespace string) string {

@@ -39,7 +39,7 @@ func TestAddOne(t *testing.T) {
 }
 
 func TestAdds(t *testing.T) {
-	var arr []model.Student
+	var arr []any
 	for i := 0; i < 10; i++ {
 		s := model.Student{
 			Name:       fmt.Sprintf("test_%d", i),
@@ -117,8 +117,8 @@ func TestUpdate(t *testing.T) {
 func TestIf(t *testing.T) {
 	var stu model.Student
 	args := map[string]any{
-		"id": 1,
-		//"name": "test_0",
+		"id":   1,
+		"name": "test_0",
 	}
 	if stu, err = studentMapper.QueryIf(args); err != nil {
 		t.Error(err.Error())

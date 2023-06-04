@@ -184,7 +184,10 @@ func mapToMap(value reflect.Value, ctx map[string]any) {
 		}
 		if vOf.Kind() == reflect.Interface {
 			if vOf.Elem().Kind() == reflect.Slice {
-				if vOf.Elem().Type().Elem().Kind() == reflect.Struct || vOf.Elem().Type().Elem().Kind() == reflect.Pointer || vOf.Elem().Type().Elem().Kind() == reflect.Map {
+				if vOf.Elem().Type().Elem().Kind() == reflect.Struct ||
+					vOf.Elem().Type().Elem().Kind() == reflect.Pointer ||
+					vOf.Elem().Type().Elem().Kind() == reflect.Map ||
+					vOf.Elem().Type().Elem().Kind() == reflect.Interface {
 					v = filedToMap(v)
 				}
 			}
@@ -208,14 +211,12 @@ func filedToMap(value any) []map[string]any {
 	arr := make([]map[string]any, 0)
 	length := valueOf.Len()
 	switch elem.Kind() {
-	case reflect.Struct, reflect.Pointer:
+	case reflect.Struct, reflect.Pointer, reflect.Interface:
 		for i := 0; i < length; i++ {
 			val := valueOf.Index(i)
 			m := toMap(val.Interface())
 			arr = append(arr, m)
 		}
-	case reflect.Slice:
-
 	case reflect.Map:
 		for i := 0; i < length; i++ {
 			val := valueOf.Index(i)
