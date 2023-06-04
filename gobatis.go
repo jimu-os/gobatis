@@ -227,17 +227,15 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 		return ForElement(element, template, ctx)
 	case If:
 		return IfElement(element, template, ctx)
-	case Where, WHERE:
-		return WhereTag(element, template, ctx)
-	case Value, Values, VALUE, VALUES:
-		return ValueTag(element, template, ctx)
 	case Select, Update, Delete, Insert:
 		return StatementElement(element, template, ctx)
 	case Mapper:
 		// 对根标签不做任何处理
 		return "", "", nil, nil
+	default:
+		return keyTag(element, template, ctx)
 	}
-	return "", "", nil, errors.New("error")
+	//return "", "", nil, errors.New("error")
 }
 
 func Namespace(namespace string) string {

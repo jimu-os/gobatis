@@ -39,7 +39,7 @@ func TestAddOne(t *testing.T) {
 }
 
 func TestAdds(t *testing.T) {
-	var arr []model.Student
+	var arr []any
 	for i := 0; i < 10; i++ {
 		s := model.Student{
 			Name:       fmt.Sprintf("test_%d", i),
