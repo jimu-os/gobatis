@@ -17,7 +17,7 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 	return func(values []reflect.Value) []reflect.Value {
 		result := createReturn(returns)
 		var errType, Exec, BeginCall reflect.Value
-		var ctx any
+		var ctx map[string]any
 		errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 		db := batis.db
 		c, ctx, db, auto := Args(db, values)
@@ -46,7 +46,7 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 
 // Args 参数赋值处理
 // 处理定义函数的入参，返回一个参数序列给到后面的函数调用入参
-func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any, tx reflect.Value, auto bool) {
+func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args map[string]any, tx reflect.Value, auto bool) {
 	params := make(map[string]any)
 	tx = db
 	// 是否启用自动提交事务
@@ -77,7 +77,7 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args any
 			continue
 		}
 		// 其余参数全都按照正常参数处理
-		args = arg.Interface()
+		args := arg.Interface()
 		m := toMap(args)
 		mergeMap(params, m)
 	}

@@ -143,14 +143,14 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 	group.Wait()
 }
 
-func (batis *GoBatis) get(id []string, value any) (string, string, string, []any, error) {
+func (batis *GoBatis) get(id []string, value map[string]any) (string, string, string, []any, error) {
 	if len(id) != 2 {
 		return "", "", "", nil, errors.New("id error")
 	}
-	ctx := toMap(value)
+	//ctx := toMap(value)
 	if sql, b := batis.NameSpaces[id[0]]; b {
 		if element, f := sql.Statement[id[1]]; f {
-			analysis, tag, tempSql, params, err := Analysis(element, ctx)
+			analysis, tag, tempSql, params, err := Analysis(element, value)
 			if err != nil {
 				return "", "", "", nil, err
 			}

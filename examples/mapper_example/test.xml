@@ -32,8 +32,9 @@
     <select id="QueryIf">
         select * from student
         <where>
+            1=1
             <if expr="{name!=nil}">
-                name={name}
+              or  name={name}
             </if>
         </where>
     </select>
