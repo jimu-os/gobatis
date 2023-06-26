@@ -186,9 +186,18 @@ func mapToMap(value reflect.Value, ctx map[string]any) {
 			if vOf.Elem().Kind() == reflect.Slice {
 				if vOf.Elem().Type().Elem().Kind() == reflect.Struct ||
 					vOf.Elem().Type().Elem().Kind() == reflect.Pointer ||
-					vOf.Elem().Type().Elem().Kind() == reflect.Map ||
-					vOf.Elem().Type().Elem().Kind() == reflect.Interface {
+					vOf.Elem().Type().Elem().Kind() == reflect.Map {
 					v = filedToMap(v)
+				}
+				// todo 修复切片中存储的 interface{} 类型的具体指向,基础数据类型不做任何处理
+				if vOf.Elem().Type().Elem().Kind() == reflect.Interface {
+					if vOf.Elem().Len() > 0 {
+						index := vOf.Elem().Index(0)
+						switch index.Elem().Type().Kind() {
+						case reflect.Struct, reflect.Pointer, reflect.Map:
+							v = filedToMap(v)
+						}
+					}
 				}
 			}
 			if vOf.Elem().Kind() == reflect.Struct || vOf.Elem().Kind() == reflect.Map || vOf.Elem().Kind() == reflect.Pointer {
