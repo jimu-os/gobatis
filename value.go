@@ -10,7 +10,7 @@ func elementValue(value any) (v string, flag bool, err error) {
 	case int:
 		v = strconv.Itoa(value.(int))
 	case int64:
-		v = strconv.FormatInt(value.(int64), 64)
+		v = strconv.FormatInt(value.(int64), 10)
 	case float64:
 		v = strconv.FormatFloat(value.(float64), 'f', 2, 64)
 	case bool:
