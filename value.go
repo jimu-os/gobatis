@@ -3,18 +3,18 @@ package gobatis
 import "strconv"
 
 func elementValue(value any) (v string, flag bool, err error) {
-	switch value.(type) {
+	switch vt := value.(type) {
 	case string:
-		v = value.(string)
+		v = vt
 		flag = true
 	case int:
-		v = strconv.Itoa(value.(int))
+		v = strconv.Itoa(vt)
 	case int64:
-		v = strconv.FormatInt(value.(int64), 10)
+		v = strconv.FormatInt(vt, 10)
 	case float64:
-		v = strconv.FormatFloat(value.(float64), 'f', 2, 64)
+		v = strconv.FormatFloat(vt, 'f', 2, 64)
 	case bool:
-		v = strconv.FormatBool(value.(bool))
+		v = strconv.FormatBool(vt)
 	default:
 		// 其他复杂数据类型
 		if handle, err := dataHandle(value); err != nil {
