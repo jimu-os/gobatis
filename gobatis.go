@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/beevik/etree"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -41,6 +42,8 @@ type GoBatis struct {
 	NameSpaces map[string]*Sql
 	// mapper 文件加载
 	mapperFS embed.FS
+	// io 加载 mapper 文件
+	mappers []io.Reader
 }
 
 // Logs 切换日志实例
@@ -71,6 +74,10 @@ func (batis *GoBatis) Source(source string) {
 				}
 				element := document.Root()
 				attr := element.SelectAttr("namespace")
+				if attr.Value == "" {
+					batis.Warn("There is an empty namespace. Skip loading this mapper")
+					return nil
+				}
 				s := NewSql(element)
 				s.LoadSqlElement()
 				batis.NameSpaces[attr.Value] = s
@@ -89,11 +96,36 @@ func (batis *GoBatis) Source(source string) {
 		batis.walk(batis.SqlSource, dir, batis.mapperFS, batis.NameSpaces)
 	}
 
+	if batis.mappers != nil {
+		for _, mapperIo := range batis.mappers {
+			document := etree.NewDocument()
+			_, err := document.ReadFrom(mapperIo)
+			if err != nil {
+				panic(err)
+			}
+			element := document.Root()
+			attr := element.SelectAttr("namespace")
+			if attr.Value == "" {
+				batis.Warn("There is an empty namespace. Skip loading this mapper")
+				continue
+			}
+			s := NewSql(element)
+			s.LoadSqlElement()
+			batis.NameSpaces[attr.Value] = s
+			batis.Debug("load mapper io namespace:", attr.Value)
+		}
+	}
+
 }
 
 // Load 加载 mapper 静态文件
 func (batis *GoBatis) Load(files embed.FS) {
 	batis.mapperFS = files
+}
+
+// LoadIo 通过 io 接口加载 mapper 文件
+func (batis *GoBatis) LoadIo(ios ...io.Reader) {
+
 }
 
 // ScanMappers 扫描解析
