@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/iancoleman/strcase"
 	"reflect"
 	"strings"
@@ -77,8 +78,8 @@ func Args(db reflect.Value, values []reflect.Value) (ctx reflect.Value, args map
 			continue
 		}
 		// 其余参数全都按照正常参数处理
-		args := arg.Interface()
-		m := toMap(args)
+		argValue := arg.Interface()
+		m := toMap(argValue)
 		mergeMap(params, m)
 	}
 	args = params
@@ -104,7 +105,18 @@ func Return(result []reflect.Value) (ret []reflect.Value) {
 }
 
 // SelectStatement 执行查询
-func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templateSql string, params []any, result []reflect.Value) (E reflect.Value) {
+	defer func() {
+		// 收集错误 返回到上层
+		if e := recover(); e != nil {
+			errT := reflect.New(reflect.TypeOf(new(error))).Elem().Type()
+			errOf := reflect.ValueOf(e)
+			if errOf.Type().Implements(errT) {
+				E = errOf
+			}
+		}
+	}()
+	logtext := ""
 	var resultType reflect.Value
 	star := time.Now()
 	Query := db.MethodByName("QueryContext")
@@ -134,20 +146,22 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	} else {
 		resultType = result[0]
 	}
-	err := reflect.New(reflect.TypeOf(new(error))).Elem()
+	E = reflect.New(reflect.TypeOf(new(error))).Elem()
 	var value reflect.Value
 	if resultType.Kind() != reflect.Interface {
-		value, err = resultMapping(call[0], resultType.Interface())
-		if !err.IsZero() {
-			return err
+		value, E = resultMapping(call[0], resultType.Interface())
+		if !E.IsZero() {
+			return
 		}
 		QueryResultMapper(value, result)
 		end := time.Now()
-		batis.Debug("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", value.Len(), "), Time: ", end.Sub(star).String())
+		logtext = fmt.Sprint("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Count: (", value.Len(), "), Time: ", end.Sub(star).String())
+		batis.Debug(logtext)
 	}
 	end := time.Now()
-	batis.Debug("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Time: ", end.Sub(star).String())
-	return err
+	logtext = fmt.Sprint("\r\nSQL Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, " Time: ", end.Sub(star).String())
+	batis.Debug(logtext)
+	return
 }
 
 // selectCount 统计 sql 数量
@@ -189,9 +203,19 @@ func (batis *GoBatis) selectCount(db, ctx reflect.Value, statements string, resu
 }
 
 // ExecStatement 执行修改
-func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) reflect.Value {
+func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) (errType reflect.Value) {
+	defer func() {
+		// 收集错误 返回到上层
+		if e := recover(); e != nil {
+			errT := reflect.New(reflect.TypeOf(new(error))).Elem().Type()
+			errOf := reflect.ValueOf(e)
+			if errOf.Type().Implements(errT) {
+				errType = errOf
+			}
+		}
+	}()
 	star := time.Now()
-	errType := reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
+	errType = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	if !auto {
 		Exec = db.MethodByName("ExecContext")
 	} else {
@@ -209,17 +233,19 @@ func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *refl
 		reflect.ValueOf(params),
 	})
 	if !call[1].IsZero() {
-		return call[1]
+		errType = call[1]
+		return
 	}
 	var count int64
 	count, err := ExecResultMapper(result, call[0].Interface().(sql.Result))
 	if err != nil {
 		errType.Set(reflect.ValueOf(err))
-		return errType
+		return
 	}
 	end := time.Now()
-	batis.Debug("\r\nSQL Exec Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, ", Count: (", count, "), Time: ", end.Sub(star).String())
-	return errType
+	logtext := fmt.Sprint("\r\nSQL Exec Statements ==> ", statements, "\r\nSQL Template ==> ", templateSql, "\r\nParameter: ", params, ", Count: (", count, "), Time: ", end.Sub(star).String())
+	batis.Debug(logtext)
+	return
 }
 
 // End 错误提交及回滚
@@ -304,6 +330,7 @@ func initField(value reflect.Value) {
 	}
 }
 
+// SQL查询结果集映射
 func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Value) {
 	var err error
 	var flag bool
@@ -458,7 +485,7 @@ func scanMap(value reflect.Value, values []reflect.Value, MapKey map[int]string)
 }
 
 // ResultMapping
-// 解析结构体上的column标签 生成数据库字段到结构体字段的映射匹配
+// 解析结构体上的column标签 生成 数据库字段 到 结构体字段名 的映射匹配
 // value 如果传递的是结构体，则会解析对应的 column 标签 或者字段本身
 // value 如果是 map 则不会做任何处理，返回 nil
 func ResultMapping(value any) map[string]string {
