@@ -146,7 +146,7 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 			vf = vf.Elem()
 			namespace := vf.Type().String()
 			namespace = Namespace(namespace)
-			batis.Debug("Starts loading the '" + namespace + "' mapping resolution")
+			batis.Debug(fmt.Sprint("Starts loading the '" + namespace + "' mapping resolution"))
 			wait := sync.WaitGroup{}
 			wait.Add(vf.NumField())
 			for j := 0; j < vf.NumField(); j++ {
@@ -166,7 +166,7 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 					fun := field.Type().String()
 					index := strings.Index(fun, "(")
 					fun = " " + fun[index:]
-					batis.Debug(namespace+"."+structField.Name, fun)
+					batis.Debug(fmt.Sprint(namespace+"."+structField.Name, fun))
 				}(vf.Field(j), vf.Type().Field(j))
 			}
 			wait.Wait()
@@ -322,7 +322,7 @@ func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 			s := NewSql(element)
 			s.LoadSqlElement()
 			NameSpaces[attr.Value] = s
-			batis.Debug("load mapper file path:[" + path + "]")
+			batis.Debug(fmt.Sprint("load mapper file path:[" + path + "]"))
 		}
 	}
 }
