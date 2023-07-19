@@ -123,9 +123,14 @@ func (batis *GoBatis) Load(files embed.FS) {
 	batis.mapperFS = files
 }
 
-// LoadIo 通过 io 接口加载 mapper 文件
-func (batis *GoBatis) LoadIo(ios ...io.Reader) {
-
+// LoadByRootPath 根据提供的更路径及其 files 加载 mapper 文件
+// {root:表示根路径,根路径应该和提供的 files 嵌入文件资源对应}
+func (batis *GoBatis) LoadByRootPath(root string, files embed.FS) {
+	dir, err := files.ReadDir(root)
+	if err != nil {
+		return
+	}
+	batis.walk(root, dir, files, batis.NameSpaces)
 }
 
 // ScanMappers 扫描解析
