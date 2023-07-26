@@ -277,6 +277,9 @@ func Element(element *etree.Element, template string, ctx map[string]any) (strin
 
 func Namespace(namespace string) string {
 	if index := strings.LastIndex(namespace, "."); index != -1 {
+		if end := strings.Index(namespace, "["); end != -1 {
+			return namespace[index+1 : end]
+		}
 		return namespace[index+1:]
 	}
 	return namespace
