@@ -319,10 +319,8 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 	templateByte := []byte(template)
 	starIndex := 0
 	for i := starIndex; i < len(templateByte); {
-		if types, flag := checkTemplateArgs(templateByte[i]); flag {
+		if chat, types, flag := checkTemplateArgs(templateByte[i]); flag {
 			// 解析到模版参数
-			// 保存模版标记以便下面匹配结尾
-			chat := templateByte[i]
 			starIndex = i
 			endIndex := i
 			for j := starIndex; j < len(templateByte); j++ {
@@ -350,6 +348,12 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 				buf.WriteString("'" + v + "'")
 			} else {
 				buf.WriteString(v)
+			}
+			if templateByte[i] == '[' && chat == ']' {
+				// 对 [] 参数做特殊处理 不让 在需要执行的 sql 模版中语句中出现
+				templateBuf.WriteString(v)
+				i = endIndex + 1
+				continue
 			}
 			templateBuf.WriteString("?")
 			params = append(params, value)
@@ -430,13 +434,13 @@ func mergeMap(target, src map[string]any) {
 // 返回值1 返回模版参数类型
 // 返回值2 表示此字符是否是模版参数的开始字符
 // 当前模版参数 仅有 {} [] 两种
-func checkTemplateArgs(b byte) (bool, bool) {
-	if b == '{' || b == '}' {
-		return true, true
+func checkTemplateArgs(b byte) (byte, bool, bool) {
+	if b == '{' {
+		return '}', true, true
 	}
 
-	if b == '[' || b == ']' {
-		return false, true
+	if b == '[' {
+		return ']', false, true
 	}
-	return false, false
+	return b, false, false
 }
