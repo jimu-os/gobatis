@@ -10,7 +10,7 @@ type StudentMapper struct {
 	InsertId func(student model.Student) (int64, int64, error)
 	Adds     func(ctx any) error
 
-	QueryAll  func() ([]model.Student, error)
+	QueryAll  func(ctx any) ([]model.Student, error)
 	QueryPage func() ([]model.Student, int64, error)
 
 	Update func(student model.Student, tx *sql.Tx) (int64, error)

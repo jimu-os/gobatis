@@ -76,7 +76,9 @@ func TestInsertId(t *testing.T) {
 
 func TestQueryAll(t *testing.T) {
 	var stus []model.Student
-	if stus, err = studentMapper.QueryAll(); err != nil {
+	if stus, err = studentMapper.QueryAll(map[string]any{
+		"table_name": "student",
+	}); err != nil {
 		t.Error(err.Error())
 		return
 	}

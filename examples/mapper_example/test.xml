@@ -18,7 +18,7 @@
     </insert>
 
     <select id="QueryAll">
-        select * from student
+        select * from [table_name]
     </select>
 
     <select id="QueryPage">
