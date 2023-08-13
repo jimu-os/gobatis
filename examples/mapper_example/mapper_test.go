@@ -78,6 +78,7 @@ func TestQueryAll(t *testing.T) {
 	var stus []model.Student
 	if stus, err = studentMapper.QueryAll(map[string]any{
 		"table_name": "student",
+		"id":         0,
 	}); err != nil {
 		t.Error(err.Error())
 		return
