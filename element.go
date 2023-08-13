@@ -319,15 +319,19 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 	templateByte := []byte(template)
 	starIndex := 0
 	for i := starIndex; i < len(templateByte); {
-		if templateByte[i] == '{' {
+		if types, flag := checkTemplateArgs(templateByte[i]); flag {
+			// 解析到模版参数
+			// 保存模版标记以便下面匹配结尾
+			chat := templateByte[i]
 			starIndex = i
 			endIndex := i
 			for j := starIndex; j < len(templateByte); j++ {
-				if templateByte[j] == '}' {
+				if templateByte[j] == chat {
 					endIndex = j
 					break
 				}
 			}
+			// 上面如果没有解析到模版参数结尾标记，则直表示模版存在错误需要报错
 			if starIndex == endIndex {
 				panic(fmt.Sprintf("%s Template format error\n", template[:starIndex+1]))
 			}
@@ -337,53 +341,12 @@ func AnalysisTemplate(template string, ctx map[string]any) (string, string, []an
 			if err != nil {
 				return "", "", params, fmt.Errorf("%s,'%s' not found", template, s)
 			}
-			/*switch value.(type) {
-			case string:
-				buf.WriteString("'" + value.(string) + "'")
-				templateBuf.WriteString("?")
-				params = append(params, value)
-			case int:
-				itoa := strconv.Itoa(value.(int))
-				buf.WriteString(itoa)
-				templateBuf.WriteString("?")
-				params = append(params, value)
-			case int64:
-				itoa := strconv.Itoa(int(value.(int64)))
-				buf.WriteString(itoa)
-				templateBuf.WriteString("?")
-				params = append(params, value)
-			case float64:
-				float := strconv.FormatFloat(value.(float64), 'f', 'g', 64)
-				buf.WriteString(float)
-				templateBuf.WriteString("?")
-				params = append(params, value)
-			default:
-				// 其他复杂数据类型
-				if handle, e := dataHandle(value); e != nil {
-					return "", "", nil, e
-				} else {
-					var v string
-					switch handle.(type) {
-					case string:
-						v = "'" + handle.(string) + "'"
-					case int:
-						v = strconv.Itoa(handle.(int))
-					case float64:
-						v = strconv.FormatFloat(handle.(float64), 'f', 'f', 64)
-					case bool:
-						v = strconv.FormatBool(handle.(bool))
-					}
-					buf.WriteString(v)
-					templateBuf.WriteString("?")
-					params = append(params, handle)
-				}
-			}*/
 			//封装 数据解析
 			v, flag, err := elementValue(value)
 			if err != nil {
 				return "", "", nil, err
 			}
-			if flag {
+			if flag && types {
 				buf.WriteString("'" + v + "'")
 			} else {
 				buf.WriteString(v)
@@ -461,4 +424,19 @@ func mergeMap(target, src map[string]any) {
 	for k, v := range src {
 		target[k] = v
 	}
+}
+
+// 检查解析的字符 是否是模版参数
+// 返回值1 返回模版参数类型
+// 返回值2 表示此字符是否是模版参数的开始字符
+// 当前模版参数 仅有 {} [] 两种
+func checkTemplateArgs(b byte) (bool, bool) {
+	if b == '{' || b == '}' {
+		return true, true
+	}
+
+	if b == '[' || b == ']' {
+		return false, true
+	}
+	return false, false
 }

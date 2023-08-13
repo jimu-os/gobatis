@@ -6,6 +6,7 @@ func elementValue(value any) (v string, flag bool, err error) {
 	switch vt := value.(type) {
 	case string:
 		v = vt
+		// 字符串 此处就返回 true 表示 所有字符串都会被添加上 '' 单引号
 		flag = true
 	case int:
 		v = strconv.Itoa(vt)
