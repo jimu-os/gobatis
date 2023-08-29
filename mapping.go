@@ -109,13 +109,15 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	defer func() {
 		// 收集错误 返回到上层
 		if e := recover(); e != nil {
-			errT := reflect.New(reflect.TypeOf(new(error))).Elem().Type()
-			errOf := reflect.ValueOf(e)
-			if errOf.Type().Implements(errT) {
-				E = errOf
+			of := reflect.ValueOf(e)
+			fmt.Println(of.Type().String())
+			fmt.Println(E.Type().String())
+			if of.Type().AssignableTo(E.Type()) {
+				E.Set(of)
 			}
 		}
 	}()
+	E = reflect.New(reflect.TypeOf(new(error)).Elem()).Elem()
 	logtext := ""
 	var resultType reflect.Value
 	star := time.Now()
@@ -146,7 +148,6 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 	} else {
 		resultType = result[0]
 	}
-	E = reflect.New(reflect.TypeOf(new(error))).Elem()
 	var value reflect.Value
 	if resultType.Kind() != reflect.Interface {
 		value, E = resultMapping(call[0], resultType.Interface())
@@ -416,7 +417,8 @@ func buildScan(value reflect.Value, columns []string, resultColumn map[string]st
 		Field := value.FieldByName(name)
 		if Field == (reflect.Value{}) {
 			// 没有找到对应的
-			panic("The '" + column + "' of the result set does not match the structure '" + value.Type().String() + "',the type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
+			err := errors.New("The '" + column + "' of the result set does not match the structure '" + value.Type().String() + "',the type of the returned value does not match the result set of the sql query, and the mapping fails. Check whether the structure field name or 'column' tag matches the mapping relationship of the query data set")
+			panic(err)
 		}
 		// 检查 接收参数 如果是特殊参数 比如结构体，时间类型的情况需要特殊处理 当前仅对时间进行特殊处理 ,获取当前 参数的 values 索引 并保存替换
 		// fieldIndexMap 存储的是对应字段的地址，若字段类型为指针，则要为指针分配地址后进行保存
@@ -499,6 +501,9 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
+			if field.Anonymous {
+
+			}
 			name := field.Name
 			// 添加多种字段名匹配情况
 
