@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/beevik/etree"
+	"go.uber.org/zap"
 	"io"
 	"io/fs"
 	"os"
@@ -20,21 +21,21 @@ var banner = "  ______       ______             _      \n / _____)     (____  \\
 
 func New(db *sql.DB) *GoBatis {
 	if db == nil {
-		Panic("db nil")
+		panic("db nil")
 	}
 	err := db.Ping()
 	if err != nil {
-		Panic(err)
+		panic(err)
 	}
 	return &GoBatis{
 		db:         reflect.ValueOf(db),
 		NameSpaces: map[string]*Sql{},
-		Log:        logs,
+		Logger:     logger,
 	}
 }
 
 type GoBatis struct {
-	Log
+	*zap.Logger
 	db reflect.Value
 	// SqlSource 用于保存 xml 配置的文件的根路径配置信息，Build会通过SqlSource属性去加载 xml 文件
 	SqlSource string
@@ -47,8 +48,8 @@ type GoBatis struct {
 }
 
 // Logs 切换日志实例
-func (batis *GoBatis) Logs(log Log) {
-	batis.Log = log
+func (batis *GoBatis) Logs(logger *zap.Logger) {
+	batis.Logger = logger
 }
 
 // Source 加载 mapper文件
@@ -112,10 +113,9 @@ func (batis *GoBatis) Source(source string) {
 			s := NewSql(element)
 			s.LoadSqlElement()
 			batis.NameSpaces[attr.Value] = s
-			batis.Debug("load mapper io namespace:", attr.Value)
+			batis.Debug("load mapper io namespace: " + attr.Value)
 		}
 	}
-
 }
 
 // Load 加载 mapper 静态文件
@@ -164,7 +164,7 @@ func (batis *GoBatis) ScanMappers(mappers ...any) {
 					}
 					// mapper 函数校验规范
 					if flag, err := MapperCheck(field); !flag {
-						Panic(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error())
+						batis.Panic(fmt.Sprint(namespace+"."+structField.Name, ",", field.Type().String(), ",", err.Error()))
 					}
 					key = append(key, structField.Name)
 					batis.initMapper(key, field)
