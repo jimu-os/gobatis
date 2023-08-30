@@ -110,10 +110,14 @@ func (batis *GoBatis) selectStatement(db, ctx reflect.Value, statements, templat
 		// 收集错误 返回到上层
 		if e := recover(); e != nil {
 			of := reflect.ValueOf(e)
-			fmt.Println(of.Type().String())
-			fmt.Println(E.Type().String())
-			if of.Type().AssignableTo(E.Type()) {
-				E.Set(of)
+			switch of.Kind() {
+			case reflect.String:
+				err := errors.New(of.Interface().(string))
+				E.Set(reflect.ValueOf(err))
+			default:
+				if of.Type().AssignableTo(E.Type()) {
+					E.Set(of)
+				}
 			}
 		}
 	}()
@@ -207,11 +211,17 @@ func (batis *GoBatis) selectCount(db, ctx reflect.Value, statements string, resu
 func (batis *GoBatis) execStatement(db, ctx, Exec reflect.Value, BeginCall *reflect.Value, auto bool, statements, templateSql string, params []any, result []reflect.Value) (errType reflect.Value) {
 	defer func() {
 		// 收集错误 返回到上层
+		// 收集错误 返回到上层
 		if e := recover(); e != nil {
-			errT := reflect.New(reflect.TypeOf(new(error))).Elem().Type()
-			errOf := reflect.ValueOf(e)
-			if errOf.Type().Implements(errT) {
-				errType = errOf
+			of := reflect.ValueOf(e)
+			switch of.Kind() {
+			case reflect.String:
+				err := errors.New(of.Interface().(string))
+				errType.Set(reflect.ValueOf(err))
+			default:
+				if of.Type().AssignableTo(errType.Type()) {
+					errType.Set(of)
+				}
 			}
 		}
 	}()
@@ -305,6 +315,7 @@ func initField(value reflect.Value) {
 	if value.Kind() == reflect.Pointer {
 		value = value.Elem()
 		initField(value)
+		return
 	}
 	if value.Kind() != reflect.Struct {
 		return
@@ -315,9 +326,10 @@ func initField(value reflect.Value) {
 			continue
 		}
 		if field.Kind() == reflect.Pointer {
+			fmt.Println(field.Type().String())
 			if field.IsZero() {
 				if !field.Elem().CanSet() {
-					elem := reflect.New(field.Type()).Elem()
+					elem := reflect.New(field.Type().Elem())
 					field.Set(elem)
 				}
 			}
@@ -493,16 +505,26 @@ func scanMap(value reflect.Value, values []reflect.Value, MapKey map[int]string)
 func ResultMapping(value any) map[string]string {
 	mapp := make(map[string]string)
 	of := reflect.TypeOf(value)
+	tf := reflect.ValueOf(value)
 	if of.Kind() == reflect.Pointer {
-		tf := reflect.ValueOf(value).Elem()
-		return ResultMapping(tf.Interface())
+		return ResultMapping(tf.Elem().Interface())
 	}
 	switch of.Kind() {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
 			if field.Anonymous {
-
+				var mapping map[string]string
+				val := tf.Field(i)
+				fieldValue := val
+				if field.Type.Kind() == reflect.Pointer {
+					fieldValue = reflect.New(val.Type().Elem()).Elem()
+				}
+				mapping = ResultMapping(fieldValue.Interface())
+				for k, v := range mapping {
+					mapp[k] = v
+				}
+				continue
 			}
 			name := field.Name
 			// 添加多种字段名匹配情况
