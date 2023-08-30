@@ -477,14 +477,14 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 			// 进行自定义 数据映射期间找不到对应的匹配处理器，将产生恐慌提示用户对这个数据类型应该提供一个处理注册
 			// 没有找到对应的数据处理，可以通过 gobatis.GolangType 方法对 具体类型进行注册
 			err := errors.New("The data processor corresponding to the '" + key + "' is not occupied. You need to register GolangType to support this type")
-			Panic(err)
+			panic(err)
 		}
 		if fun == nil {
 			continue
 		}
 		err := fun(v, mapV.Elem().Interface())
 		if err != nil {
-			Panic(err)
+			panic(err)
 		}
 	}
 }
