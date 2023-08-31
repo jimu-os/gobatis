@@ -514,7 +514,9 @@ func ResultMapping(value any) map[string]string {
 	case reflect.Struct:
 		for i := 0; i < of.NumField(); i++ {
 			field := of.Field(i)
-			if field.IsExported() {
+
+			// 过滤非导出字段
+			if !field.IsExported() {
 				continue
 			}
 
