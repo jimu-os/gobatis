@@ -7,6 +7,7 @@ import (
 	"github.com/antonmedv/expr"
 	"github.com/beevik/etree"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -443,4 +444,20 @@ func checkTemplateArgs(b byte) (byte, bool, bool) {
 		return ']', false, true
 	}
 	return b, false, false
+}
+
+// 转换为 postgres 占位符
+func toPgPlaceholder(sqlStr string) string {
+	builder := strings.Builder{}
+	index := 1
+	for _, v := range sqlStr {
+		if v == '?' {
+			builder.WriteString("$")
+			builder.WriteString(strconv.Itoa(index))
+			index++
+		} else {
+			builder.WriteString(string(v))
+		}
+	}
+	return builder.String()
 }

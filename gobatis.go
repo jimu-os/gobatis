@@ -19,6 +19,11 @@ import (
 
 var banner = "  ______       ______             _      \n / _____)     (____  \\       _   (_)     \n| /  ___  ___  ____)  ) ____| |_  _  ___ \n| | (___)/ _ \\|  __  ( / _  |  _)| |/___)\n| \\____/| |_| | |__)  | ( | | |__| |___ |\n \\_____/ \\___/|______/ \\_||_|\\___)_(___/ \n"
 
+const (
+	MySQL = iota
+	PostgreSQL
+)
+
 func New(db *sql.DB) *GoBatis {
 	if db == nil {
 		panic("db nil")
@@ -45,6 +50,7 @@ type GoBatis struct {
 	mapperFS embed.FS
 	// io 加载 mapper 文件
 	mappers []io.Reader
+	Type    int
 }
 
 // Logs 切换日志实例
