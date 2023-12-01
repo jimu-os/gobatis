@@ -9,3 +9,5 @@ create table student
     age         int         null,
     create_time datetime    null
 );
+
+select  exists (select 1 from student where name='') as 'exists'

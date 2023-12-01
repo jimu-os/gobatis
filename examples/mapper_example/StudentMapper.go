@@ -16,4 +16,6 @@ type StudentMapper struct {
 	Update func(student model.Student, tx *sql.Tx) (int64, error)
 
 	QueryIf func(any) (model.Student, error)
+
+	IsRegister func(student model.Student) (map[string]bool, error)
 }
