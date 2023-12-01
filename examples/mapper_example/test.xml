@@ -39,4 +39,12 @@
         </where>
     </select>
 
+    <select id ="IsRegister">
+        select  exists (select 1 from student where name='1') as 'exists'
+    </select>
+
+    <select id ="SelectNames">
+        select  name from gobatis.student
+    </select>
+
 </mapper>

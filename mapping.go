@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/strcase"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -398,7 +399,10 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 		}
 		// 迭代是否有特殊结构体 主要对 时间类型做了处理
 		scanWrite(values, fieldIndexMap)
-		scanMap(unValue, values, MapKey)
+		err = scanMap(unValue, values, MapKey)
+		if err != nil {
+			return result, reflect.ValueOf(err)
+		}
 		// 添加结果集
 		result = reflect.Append(result, value)
 	}
@@ -410,14 +414,16 @@ func resultMapping(row reflect.Value, resultType any) (reflect.Value, reflect.Va
 // columns 数据库结果集的列名
 // resultColumn 对应 value(结构体类型)参数 和 columns 参数的 映射关系，value(map类型)时候 该值为空
 func buildScan(value reflect.Value, columns []string, resultColumn map[string]string) ([]reflect.Value, map[int]reflect.Value, map[int]string) {
-	// Scan 函数调用参数列表,接收器存储的都是指针类 反射的指针类型
+	// values 是 Scan 函数调用参数列表,接收器存储的都是指针类 反射的指针类型,默认全部采用字符串接收
 	values := make([]reflect.Value, 0)
 	// 存储的 也将是指针的反射形式
 	fieldIndexMap := make(map[int]reflect.Value)
 	MapKey := make(map[int]string)
 	if len(columns) == 1 {
-		values = append(values, value.Addr())
-		return values, fieldIndexMap, MapKey
+		if value.Kind() != reflect.Struct && value.Kind() != reflect.Map && value.Kind() != reflect.Pointer {
+			values = append(values, value.Addr())
+			return values, fieldIndexMap, MapKey
+		}
 	}
 	// 创建 接收器
 	for index, column := range columns {
@@ -493,13 +499,67 @@ func scanWrite(values []reflect.Value, fieldIndexMap map[int]reflect.Value) {
 }
 
 // scanMap select 查询返回的结果集是 map 的处理方式
-func scanMap(value reflect.Value, values []reflect.Value, MapKey map[int]string) {
+func scanMap(value reflect.Value, values []reflect.Value, MapKey map[int]string) error {
 	if len(MapKey) > 0 {
 		for i := 0; i < len(values); i++ {
 			key := MapKey[i]
-			value.SetMapIndex(reflect.ValueOf(key), values[i].Elem())
+			val := values[i].Elem().Interface()
+			// 处理 map value 结果集
+			switch value.Type().Elem().Kind() {
+			case reflect.Bool:
+				parseBool, err := strconv.ParseBool(val.(string))
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(parseBool))
+			case reflect.Int:
+				parseInt, err := strconv.ParseInt(val.(string), 10, 64)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(int(parseInt)))
+			case reflect.Int8:
+				parseInt, err := strconv.ParseInt(val.(string), 10, 8)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(int8(parseInt)))
+			case reflect.Int16:
+				parseInt, err := strconv.ParseInt(val.(string), 10, 16)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(int16(parseInt)))
+			case reflect.Int32:
+				parseInt, err := strconv.ParseInt(val.(string), 10, 32)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(int32(parseInt)))
+			case reflect.Int64:
+				parseInt, err := strconv.ParseInt(val.(string), 10, 64)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(parseInt))
+			case reflect.Float32:
+				parseFloat, err := strconv.ParseFloat(val.(string), 32)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(parseFloat))
+			case reflect.Float64:
+				parseFloat, err := strconv.ParseFloat(val.(string), 64)
+				if err != nil {
+					return err
+				}
+				value.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(parseFloat))
+			default:
+				value.SetMapIndex(reflect.ValueOf(key), values[i].Elem())
+			}
 		}
 	}
+	return nil
 }
 
 // ResultMapping

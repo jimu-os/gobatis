@@ -17,5 +17,7 @@ type StudentMapper struct {
 
 	QueryIf func(any) (model.Student, error)
 
-	IsRegister func(student model.Student) (map[string]bool, error)
+	IsRegister func(student model.Student) (bool, error)
+
+	SelectNames func() ([]int, error)
 }

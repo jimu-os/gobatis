@@ -139,9 +139,26 @@ func TestWhere(t *testing.T) {
 	}
 }
 
+func TestIsR(t *testing.T) {
+	flag, err := studentMapper.IsRegister(model.Student{})
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	fmt.Println(flag)
+}
+
+func TestNames(t *testing.T) {
+	names, err := studentMapper.SelectNames()
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	fmt.Println(names)
+}
+
 func TestName(t *testing.T) {
-	sqlStr := "select * from student where name =?"
-	t.Log(toPgPlaceholder(sqlStr))
+	t.Log(strconv.ParseBool("False"))
 }
 
 // 转换为 postgres 占位符
