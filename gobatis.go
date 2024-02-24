@@ -313,7 +313,6 @@ func (batis *GoBatis) walk(root string, list []fs.DirEntry, files embed.FS, Name
 		path := filepath.Join(root, dirEntry.Name())
 		path = filepath.ToSlash(path)
 		if dirEntry.IsDir() {
-			fmt.Println(dirEntry.Name())
 			dir, err := files.ReadDir(path)
 			if err != nil {
 				panic(err)
