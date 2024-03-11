@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"gitee.com/aurora-engine/gobatis"
+	"gitee.com/aurora-engine/gobatis/base"
 	"gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
 	_ "github.com/go-sql-driver/mysql"
 	"strconv"
@@ -175,4 +176,11 @@ func toPgPlaceholder(sqlStr string) string {
 		}
 	}
 	return builder.String()
+}
+
+func TestM(t *testing.T) {
+	b := new(base.MapperTest[model.Student])
+	m := (*b)
+	insert := m.Insert(model.Student{})
+	fmt.Println(insert)
 }
