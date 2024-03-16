@@ -6,7 +6,6 @@ import (
 	"gitee.com/aurora-engine/gobatis"
 	"gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
 	_ "github.com/go-sql-driver/mysql"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -179,13 +178,4 @@ func toPgPlaceholder(sqlStr string) string {
 }
 
 func TestMap(t *testing.T) {
-	data := map[string]any{
-		"name": "awen",
-		"age":  5,
-	}
-	valueOf := reflect.ValueOf(data)
-	keys := valueOf.MapKeys()
-	for _, key := range keys {
-		t.Log(key.String(), valueOf.MapIndex(key).Interface())
-	}
 }

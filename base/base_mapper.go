@@ -23,7 +23,3 @@ type Mapper[T any] struct {
 
 	SelectList func(T) []T
 }
-
-type MapperTest[T any] interface {
-	Insert(T) int
-}
