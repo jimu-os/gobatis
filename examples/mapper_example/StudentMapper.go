@@ -2,7 +2,7 @@ package mapper_example
 
 import (
 	"database/sql"
-	"gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
+	"github.com/jimu-os/gobatis/examples/mapper_example/model"
 )
 
 type StudentMapper struct {

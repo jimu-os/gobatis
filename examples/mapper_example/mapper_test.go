@@ -3,9 +3,9 @@ package mapper_example
 import (
 	"database/sql"
 	"fmt"
-	"gitee.com/aurora-engine/gobatis"
-	"gitee.com/aurora-engine/gobatis/examples/mapper_example/model"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jimu-os/gobatis"
+	"github.com/jimu-os/gobatis/examples/mapper_example/model"
 	"strconv"
 	"strings"
 	"testing"
