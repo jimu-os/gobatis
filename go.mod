@@ -1,4 +1,4 @@
-module gitee.com/aurora-engine/gobatis
+module github.com/jimu-os/gobatis
 
 go 1.19
 
