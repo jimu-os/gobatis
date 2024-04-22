@@ -45,20 +45,23 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		case Insert, Update, Delete:
 			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
 		}
-		End(tag, auto, results, errType, BeginCall)
 		// 如果 errType 非零值，包装错误信息返回到调用方
 		if !errType.IsZero() {
+			var err error
 			build := strings.Builder{}
-			msg := errType.Interface().(error).Error()
-			build.WriteString(msg + "\n")
+			err = errType.Interface().(error)
+			msg, _ := jsoniter.Marshal(err)
+			build.Write(msg)
+			build.WriteString("\n")
 			build.WriteString(statements + "\n")
 			build.WriteString(templateSql + "\n")
 			marshal, _ := jsoniter.Marshal(params)
 			build.Write(marshal)
 			build.WriteString("\n")
 			newErr := errors.New(build.String())
-			errType.Set(reflect.ValueOf(newErr))
+			errType = reflect.ValueOf(newErr)
 		}
+		End(tag, auto, results, errType, BeginCall)
 		return results
 	}
 }
