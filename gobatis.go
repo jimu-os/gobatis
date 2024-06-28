@@ -22,6 +22,7 @@ var banner = "  ______       ______             _      \n / _____)     (____  \\
 const (
 	MySQL = iota
 	PostgreSQL
+	Sqlite
 )
 
 func New(db *sql.DB) *GoBatis {
@@ -33,9 +34,10 @@ func New(db *sql.DB) *GoBatis {
 		panic(err)
 	}
 	return &GoBatis{
-		db:         reflect.ValueOf(db),
-		NameSpaces: map[string]*Sql{},
-		Logger:     logger,
+		db:               reflect.ValueOf(db),
+		NameSpaces:       map[string]*Sql{},
+		Logger:           logger,
+		dbTemplateHandle: dbTemplate,
 	}
 }
 
@@ -49,13 +51,29 @@ type GoBatis struct {
 	// mapper 文件加载
 	mapperFS embed.FS
 	// io 加载 mapper 文件
-	mappers []io.Reader
-	Type    int
+	mappers          []io.Reader
+	Type             int
+	dbTemplateHandle map[int]DBSqlTemplateFunc
 }
 
 // Logs 切换日志实例
 func (batis *GoBatis) Logs(logger *zap.Logger) {
 	batis.Logger = logger
+}
+
+func (batis *GoBatis) DbType(db int) {
+	if db != PostgreSQL && db != MySQL && db != Sqlite {
+		panic(errors.New("db type error"))
+	}
+	batis.Type = db
+}
+
+func (batis *GoBatis) DB(db *sql.DB) {
+	batis.db = reflect.ValueOf(db)
+}
+
+func (batis *GoBatis) templateHandle(sqlStr string) string {
+	return batis.dbTemplateHandle[batis.Type](sqlStr)
 }
 
 // Source 加载 mapper文件

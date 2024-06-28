@@ -26,9 +26,7 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		c, ctx, db, auto := Args(db, values)
 		results := Return(result)
 		statements, tag, templateSql, params, err := batis.get(id, ctx)
-		if batis.Type == PostgreSQL {
-			templateSql = toPgPlaceholder(templateSql)
-		}
+		templateSql = batis.templateHandle(templateSql)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			results[len(results)-1].Set(errType)
