@@ -27,6 +27,9 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 		results := Return(result)
 		statements, tag, templateSql, params, err := batis.get(id, ctx)
 		templateSql = batis.templateHandle(templateSql)
+		// 条件转义处理
+		templateSql = conditional(templateSql)
+		statements = conditional(statements)
 		if err != nil {
 			errType = reflect.ValueOf(err)
 			results[len(results)-1].Set(errType)
