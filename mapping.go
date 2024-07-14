@@ -41,7 +41,6 @@ func (batis *GoBatis) mapper(id []string, returns []reflect.Value) MapperFunc {
 			if errType.IsZero() {
 				// 如果 查询顺利，更具返回值个数 检查是否需要统计sql条数
 				errType = batis.selectCount(db, c, statements, results)
-
 			}
 		case Insert, Update, Delete:
 			errType = batis.execStatement(db, c, Exec, &BeginCall, auto, statements, templateSql, params, results)
